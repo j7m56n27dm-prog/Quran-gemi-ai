@@ -1,664 +1,986 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Qur'oniy Zukkolik | Professional Hifz Tizimi</title>
-    <meta name="description" content="Jiddiy o'rganuvchilar uchun Oliy darajadagi Qur'on test platformasi.">
-    <meta name="author" content="Muhammad Daler">
+/*
+Premium Ultra Smart Qur'onIQ
+Logic Architecture
+© Muhammad Daler
+*/
 
-    <!-- FONTS: 'Outfit' (Zamonaviy O'zbekcha) va 'Amiri' (Qur'oniy Arabcha) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+// ============================================================
+// CORE CONTROLLER - State Management & Test Lifecycle
+// ============================================================
 
-    <style>
-        /* * -----------------------------------------------------------
-         * 1. DIZAYN TIZIMI (DESIGN SYSTEM) - ISLAMIC MINIMAL
-         * -----------------------------------------------------------
-         */
-        :root {
-            /* Ranglar Palitrasi */
-            --color-primary: #064e3b;       /* To'q Zumrad (Emerald 900) */
-            --color-primary-light: #10b981; /* Yorqin Zumrad */
-            --color-gold: #d97706;          /* Oltin (Amber 600) */
-            --color-gold-light: #fcd34d;    /* Ochiq Oltin */
-            --color-bg: #f8fafc;            /* Ochiq Fon */
-            --color-surface: #ffffff;       /* Kartalar foni */
-            --color-text: #1e293b;          /* Asosiy Matn */
-            --color-text-muted: #64748b;    /* Yordamchi Matn */
-            --color-error: #ef4444;
-            --color-success: #059669;
+class CoreController {
+    constructor() {
+        this.state = 'idle'; // idle | running | finished
+        this.testSession = null;
+        this.currentQuestionIndex = 0;
+        this.responses = [];
+        this.startTimestamp = null;
+        this.endTimestamp = null;
+        this.observers = [];
+    }
 
-            /* O'lchamlar va Radius */
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --radius-lg: 24px;
-            --shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+    subscribe(callback) {
+        this.observers.push(callback);
+    }
 
-            /* Shriftlar */
-            --font-uz: 'Outfit', sans-serif;
-            --font-ar: 'Amiri', serif;
+    notify(eventType, data) {
+        this.observers.forEach(cb => cb({ type: eventType, data }));
+    }
+
+    startTest(testConfig) {
+        if (this.state !== 'idle') {
+            throw new Error('Test already in progress');
         }
 
-        /* Dark Mode (Avtomatik yoki qo'lda) */
-        [data-theme="dark"] {
-            --color-bg: #0f172a;
-            --color-surface: #1e293b;
-            --color-text: #f1f5f9;
-            --color-text-muted: #94a3b8;
-            --color-primary: #34d399;
-            --color-primary-light: #6ee7b7;
+        this.testSession = {
+            testId: Math.random().toString(36).substr(2, 9),
+            config: testConfig,
+            createdAt: new Date().toISOString(),
+        };
+
+        this.currentQuestionIndex = 0;
+        this.responses = [];
+        this.startTimestamp = Date.now();
+        this.state = 'running';
+
+        this.notify('test:started', { testId: this.testSession.testId });
+        return this.testSession;
+    }
+
+    submitAnswer(questionId, selectedOptionIndex, timeSpentMs) {
+        if (this.state !== 'running') {
+            throw new Error('No test in progress');
         }
 
-        /* -----------------------------------------------------------
-         * 2. RESET & GLOBAL STYLES
-         * -----------------------------------------------------------
-         */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            font-family: var(--font-uz);
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.3s ease, color 0.3s ease;
+        this.responses.push({
+            questionId,
+            selectedOptionIndex,
+            timeSpentMs,
+            timestamp: Date.now(),
+        });
+
+        this.currentQuestionIndex++;
+        this.notify('answer:submitted', { questionIndex: this.currentQuestionIndex });
+    }
+
+    finishTest() {
+        if (this.state !== 'running') {
+            throw new Error('No test in progress');
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--color-text-muted); border-radius: 10px; }
+        this.endTimestamp = Date.now();
+        const totalTimeMs = this.endTimestamp - this.startTimestamp;
 
-        /* Container */
-        .app-shell {
-            width: 100%;
-            max-width: 600px; /* Mobile-first optimal width */
-            margin: 0 auto;
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+        const result = {
+            testId: this.testSession.testId,
+            config: this.testSession.config,
+            responses: this.responses,
+            totalTimeMs,
+            createdAt: this.testSession.createdAt,
+            completedAt: new Date().toISOString(),
+        };
 
-        /* -----------------------------------------------------------
-         * 3. UI KOMPONENTLARI
-         * -----------------------------------------------------------
-         */
-        
-        /* Tugmalar */
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .btn:active { transform: scale(0.98); }
+        this.state = 'finished';
+        this.notify('test:finished', result);
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary), #047857);
-            color: white;
-            box-shadow: 0 4px 15px rgba(6, 78, 59, 0.3);
-        }
-        
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--color-text-muted);
-            color: var(--color-text);
-        }
-        
-        .btn-gold {
-            background: linear-gradient(135deg, var(--color-gold), #b45309);
-            color: white;
-        }
+        return result;
+    }
 
-        /* Kartalar va Panellar */
-        .card {
-            background: var(--color-surface);
-            border-radius: var(--radius-lg);
-            padding: 30px 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 20px;
-            animation: slideUp 0.4s ease-out;
-        }
+    resetTest() {
+        this.state = 'idle';
+        this.testSession = null;
+        this.currentQuestionIndex = 0;
+        this.responses = [];
+        this.startTimestamp = null;
+        this.endTimestamp = null;
+        this.notify('test:reset', {});
+    }
 
-        /* Navigatsiya Header */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 25px;
-        }
-        .brand { font-weight: 800; font-size: 1.4rem; color: var(--color-primary); display: flex; align-items: center; gap: 8px; }
-        .brand span { color: var(--color-gold); font-size: 1.8rem; }
+    getState() {
+        return {
+            state: this.state,
+            currentQuestionIndex: this.currentQuestionIndex,
+            totalResponses: this.responses.length,
+            testId: this.testSession?.testId,
+        };
+    }
+}
 
-        /* Arabic Text Display */
-        .ayah-display {
-            font-family: var(--font-ar);
-            font-size: 2rem;
-            line-height: 2.4;
-            text-align: center;
-            color: var(--color-text);
-            margin: 25px 0;
-            direction: rtl;
-            position: relative;
-            padding: 20px;
-            background-image: radial-gradient(circle at center, rgba(6, 78, 59, 0.05) 0%, transparent 70%);
-            border-radius: var(--radius-md);
-        }
+// ============================================================
+// TEST ENGINE - Question Generation & Management
+// ============================================================
 
-        /* Options Grid */
-        .options-list { display: flex; flex-direction: column; gap: 12px; }
-        
-        .option-item {
-            background: var(--color-bg);
-            padding: 18px;
-            border-radius: var(--radius-md);
-            border: 2px solid transparent;
-            cursor: pointer;
-            text-align: right;
-            direction: rtl;
-            font-family: var(--font-ar);
-            font-size: 1.4rem;
-            transition: 0.2s;
-            color: var(--color-text);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .option-item:hover { border-color: var(--color-primary-light); background: rgba(16, 185, 129, 0.05); }
-        .option-item.correct { background: #dcfce7; border-color: #16a34a; color: #14532d; }
-        .option-item.wrong { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
+class TestEngine {
+    constructor() {
+        this.questionPool = this.buildQuestionPool();
+        this.usedQuestions = new Set();
+    }
 
-        /* Hikmat Box */
-        .hikmat-container {
-            margin-top: 25px;
-            padding: 20px;
-            background: rgba(217, 119, 6, 0.1);
-            border-right: 4px solid var(--color-gold);
-            border-radius: var(--radius-sm);
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-        .hikmat-title { color: var(--color-gold); font-weight: 800; font-size: 0.8rem; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        .hikmat-text { font-style: italic; font-weight: 500; line-height: 1.6; }
-
-        /* Juz Grid */
-        .juz-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .juz-box {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-bg);
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            border: 2px solid transparent;
-        }
-        .juz-box:hover { border-color: var(--color-primary); color: var(--color-primary); }
-        .juz-box.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
-
-        /* Footer */
-        footer {
-            margin-top: auto;
-            text-align: center;
-            padding: 20px;
-            font-size: 0.8rem;
-            color: var(--color-text-muted);
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        /* Utility Classes */
-        .hidden { display: none !important; }
-        .text-center { text-align: center; }
-        .mt-20 { margin-top: 20px; }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Responsive Fixes */
-        @media (max-width: 400px) {
-            .juz-grid { grid-template-columns: repeat(4, 1fr); }
-            .ayah-display { font-size: 1.6rem; }
-        }
-    </style>
-</head>
-<body data-theme="light">
-
-    <div class="app-shell">
-        
-        <!-- HEADER -->
-        <header>
-            <div class="brand">
-                <span>۞</span> QUR'ONIY
-            </div>
-            <button class="btn-outline" style="width: auto; padding: 8px 12px; border-radius: 50%;" onclick="App.toggleTheme()">
-                🌙
-            </button>
-        </header>
-
-        <!-- 1. HOME PAGE -->
-        <section id="page-home" class="card active">
-            <div class="text-center">
-                <h1 style="font-size: 2rem; color: var(--color-primary); margin-bottom: 10px;">Xush Kelibsiz</h1>
-                <p style="color: var(--color-text-muted); margin-bottom: 25px;">
-                    Jiddiy tolibi ilmlar uchun Qur'on hifzini mustahkamlash platformasi.
-                </p>
-                
-                <div style="background: var(--color-bg); padding: 15px; border-radius: var(--radius-md); margin-bottom: 25px;">
-                    <span style="font-size: 0.9rem; text-transform: uppercase; color: var(--color-text-muted);">Sizning Rekordingiz</span>
-                    <div style="font-size: 2.5rem; font-weight: 800; color: var(--color-gold);" id="display-highscore">0%</div>
-                </div>
-
-                <button class="btn btn-primary" onclick="App.navigate('selection')">
-                    IMTIHONNI BOSHLASH
-                </button>
-                <button class="btn btn-outline mt-20" onclick="App.navigate('advice')">
-                    Tavsiya va Maslahatlar
-                </button>
-            </div>
-        </section>
-
-        <!-- 2. SELECTION PAGE -->
-        <section id="page-selection" class="card hidden">
-            <h2 class="text-center" style="color: var(--color-primary);">Imtihon Sozlamalari</h2>
-            
-            <div class="mt-20">
-                <label style="font-weight: 600; font-size: 0.9rem;">1. Qiyinchilik Darajasi</label>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn btn-outline" id="diff-easy" onclick="App.setDifficulty('easy')">Oson</button>
-                    <button class="btn btn-outline" id="diff-medium" onclick="App.setDifficulty('medium')">O'rta</button>
-                    <button class="btn btn-outline" id="diff-hard" onclick="App.setDifficulty('hard')">Qiyin</button>
-                </div>
-            </div>
-
-            <div class="mt-20">
-                <label style="font-weight: 600; font-size: 0.9rem;">2. Manba Tanlovi</label>
-                <button class="btn btn-gold mt-20" onclick="App.startFullTest()">BUTUN QUR'ON (Aralash)</button>
-                
-                <p style="text-align: center; margin: 15px 0; font-size: 0.8rem; opacity: 0.7;">— YOKI JUZ TANLANG —</p>
-                
-                <div class="juz-grid" id="juz-container">
-                    <!-- JS fills this -->
-                </div>
-            </div>
-
-            <button class="btn btn-outline mt-20" onclick="App.navigate('home')">← Ortga Qaytish</button>
-        </section>
-
-        <!-- 3. QUIZ PAGE (CORE) -->
-        <section id="page-quiz" class="card hidden">
-            <!-- Progress Bar -->
-            <div style="height: 6px; background: var(--color-bg); border-radius: 10px; overflow: hidden; margin-bottom: 15px;">
-                <div id="quiz-progress" style="height: 100%; width: 0%; background: var(--color-primary); transition: width 0.3s;"></div>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">
-                <span id="quiz-counter">1 / 10</span>
-                <span id="quiz-mode-label">JUZ 30 • QIYIN</span>
-            </div>
-
-            <h3 id="question-text" class="text-center mt-20" style="font-weight: 600;">Savol matni yuklanmoqda...</h3>
-            
-            <div id="ayah-box" class="ayah-display">
-                <!-- Arabic Ayah -->
-            </div>
-
-            <div id="options-box" class="options-list">
-                <!-- Options -->
-            </div>
-
-            <!-- Hikmat (Feedback) -->
-            <div id="hikmat-panel" class="hikmat-container">
-                <span class="hikmat-title">🌟 Qur'oniy Hikmat</span>
-                <p id="hikmat-content" class="hikmat-text"></p>
-            </div>
-
-            <div class="mt-20" style="display: flex; gap: 10px;">
-                <button class="btn btn-outline" style="flex: 1; border-color: var(--color-error); color: var(--color-error);" onclick="App.navigate('home')">Chiqish</button>
-                <button id="btn-next" class="btn btn-primary hidden" style="flex: 2;" onclick="App.nextQuestion()">Keyingi →</button>
-            </div>
-        </section>
-
-        <!-- 4. RESULTS PAGE -->
-        <section id="page-result" class="card hidden text-center">
-            <h2 style="color: var(--color-primary);">Natija</h2>
-            
-            <div style="width: 150px; height: 150px; border-radius: 50%; border: 8px solid var(--color-primary); display: flex; align-items: center; justify-content: center; margin: 30px auto; font-size: 3rem; font-weight: 800; color: var(--color-primary);">
-                <span id="res-score">0%</span>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
-                <div style="background: #dcfce7; padding: 15px; border-radius: 12px; color: #14532d;">
-                    ✅ To'g'ri: <strong id="res-correct">0</strong>
-                </div>
-                <div style="background: #fee2e2; padding: 15px; border-radius: 12px; color: #7f1d1d;">
-                    ❌ Xato: <strong id="res-wrong">0</strong>
-                </div>
-            </div>
-
-            <p id="res-msg" style="margin-bottom: 25px; font-weight: 600; line-height: 1.5;">...</p>
-
-            <button class="btn btn-primary" onclick="App.navigate('selection')">Qayta Urinish</button>
-            <button class="btn btn-outline mt-20" onclick="App.navigate('home')">Bosh Sahifa</button>
-        </section>
-
-        <!-- 5. ADVICE PAGE -->
-        <section id="page-advice" class="card hidden">
-            <h2 style="color: var(--color-primary); margin-bottom: 20px;">Foydali Tavsiyalar</h2>
-            <ul style="padding-left: 20px; line-height: 1.8; color: var(--color-text);">
-                <li style="margin-bottom: 10px;"><strong>Ixlos:</strong> Qur'onni faqat Alloh roziligi uchun yodlang.</li>
-                <li style="margin-bottom: 10px;"><strong>Mutashabihlar:</strong> O'xshash oyatlarni (mutashabih) alohida daftarga yozib, farqlarini belgilang. Bu test aynan shularni mustahkamlashga yordam beradi.</li>
-                <li style="margin-bottom: 10px;"><strong>Tartil:</strong> Shoshilmang. Tez o'qish xatoga olib keladi.</li>
-                <li style="margin-bottom: 10px;"><strong>Takror:</strong> "Inson unutuvchidir". Kunlik takror — hifzning yuragi.</li>
-            </ul>
-            <button class="btn btn-outline mt-20" onclick="App.navigate('home')">Tushunarli</button>
-        </section>
-
-    </div>
-
-    <footer>
-        © Muhammad Daler tomonidan ishlab chiqarilgan <br>
-        <span style="opacity: 0.6; font-size: 0.7rem;">Ultra Smart Quran Test v4.0 (Stable)</span>
-    </footer>
-
-    <!-- 
-     * -----------------------------------------------------------
-     * 4. LOGIKA VA MA'LUMOTLAR BAZASI (JAVASCRIPT)
-     * -----------------------------------------------------------
-    -->
-    <script>
-        // QUR'ON MA'LUMOTLAR BAZASI (NAMUNA)
-        // Haqiqiy loyihada bu yerda minglab savollar JSON formatida bo'ladi.
-        // Hozirgi kodda 30-Juz va muhim suralardan "High IQ" savollar kiritilgan.
-        const QUESTION_DB = [
-            // --- JUZ 30 (AMMA) ---
-            { juz: 30, level: 'easy', type: 'complete', q: "An-Naba surasi, 2-oyatni davom ettiring:", a: "عَمَّ يَتَسَآءَلُونَ", opts: ["عَنِ ٱلنَّبَإِ ٱلۡعَظِيمِ", "كَلَّا سَيَعۡلَمُونَ", "أَلَمۡ نَجۡعَلِ ٱلۡأَرۡضَ مِهَٰدٗا"], c: 0 },
-            { juz: 30, level: 'hard', type: 'before', q: "Naziyat surasining ushbu oyatidan OLDIN nima kelgan?", a: "فَإِذَا جَآءَتِ ٱلطَّآمَّةُ ٱلۡكُبۡرَىٰ", opts: ["مَتَٰعٗا لَّكُمۡ وَلِأَنۡعَٰمِكُمۡ", "يَوۡمَ يَتَذَكَّرُ ٱلۡإِنسَٰنُ مَا سَعَىٰ", "وَأَمَّا مَن خَافَ مَقَامَ رَبِّهِۦ"], c: 0 }, // Javob: Mata'an lakum (33 -> 34)
-            { juz: 30, level: 'medium', type: 'complete', q: "Abasa surasi: 'Inson o'z taomiga boqsin...'", a: "فَلۡيَنظُرِ ٱلۡإِنسَٰنُ إِلَىٰ طَعَامِهِۦٓ", opts: ["أَنَّا صَبَبۡنَا ٱلۡمَآءَ صَبّٗا", "ثُمَّ شَقَقۡنَا ٱلۡأَرۡضَ شَقّٗا", "فَأَنۢبَتۡنَا فِيهَا حَبّٗا"], c: 0 },
-            { juz: 30, level: 'easy', type: 'complete', q: "Infitor surasi 6-oyat: 'Ey Inson...'", a: "يَٰٓأَيُّهَا ٱلۡإِنسَٰنُ مَا غَرَّكَ", opts: ["بِرَبِّكَ ٱلۡكَرِيمِ", "بِرَبِّكَ ٱلۡعَظِيمِ", "بِرَبِّكَ ٱلۡرَحِيمِ"], c: 0 },
-            { juz: 30, level: 'hard', type: 'iq', q: "Qaysi sura 'Vayl' (Voy bo'lsin) so'zi bilan boshlanadi?", a: "Surani tanlang:", opts: ["Al-Humaza", "At-Takasur", "Al-Qoria"], c: 0 },
-
-            // --- JUZ 29 (TABARAK) ---
-            { juz: 29, level: 'medium', type: 'complete', q: "Mulk surasi: 'O'lim va hayotni yaratgan zot...'", a: "ٱلَّذِي خَلَقَ ٱلۡمَوۡتَ وَٱلۡحَيَوٰةَ لِيَبۡلُوَكُمۡ", opts: ["أَيُّكُمۡ أَحۡسَنُ عَمَلٗا", "أَيُّكُمۡ أَكْثَرُ مَالاً", "أَيُّكُمۡ أَقْوَىٰ إِيمَانًا"], c: 0 },
-            { juz: 29, level: 'hard', type: 'context', q: "Qalam surasi (68:4): Payg'ambarimiz (s.a.v) nima bilan sifatlanganlar?", a: "وَإِنَّكَ لَعَلَىٰ", opts: ["خُلُقٍ عَظِيمٖ", "هُدًى مُّسْتَقِيمٍ", "نُورٍ مُّبِينٍ"], c: 0 },
-            
-            // --- JUZ 1 (ALIF LAM MIM) ---
-            { juz: 1, level: 'medium', type: 'complete', q: "Baqara surasi 152-oyat: 'Meni eslanglar...'", a: "فَٱذۡكُرُونِيٓ أَذۡكُرۡكُمۡ وَٱشۡكُرُواْ لِي", opts: ["وَلَا تَكۡفُرُونِ", "وَلَا تُسۡرِفُوا", "وَلَا تَعْتَدُوا"], c: 0 },
-            { juz: 1, level: 'hard', type: 'iq', q: "Baqara surasidagi eng uzun oyat qaysi mavzuda?", a: "Oyat mavzusini toping:", opts: ["Qarz oldi-berdisi", "Ribo (Sudxo'rlik)", "Taloq", "Haj"], c: 0 },
-
-            // --- JUZ 2-28 (ARALASH - SYSTEM LOGIC UCHUN) ---
-            { juz: 18, level: 'medium', type: 'complete', q: "Kahf surasi boshi:", a: "ٱلۡحَمۡدُ لِلَّهِ ٱلَّذِيٓ أَنزَلَ عَلَىٰ عَبۡدِهِ ٱلۡكِتَٰبَ", opts: ["وَلَمۡ يَجۡعَل لَّهُۥ عِوَجَاۜ", "قَيِّمٗا لِّيُنذِرَ بَأۡسٗا", "لِّيُنذِرَ بَأْسًا شَدِيدًا"], c: 0 },
-            { juz: 27, level: 'medium', type: 'iq', q: "Ar-Rahmon surasida 'Robbingizning qaysi ne'matlarini yolg'on deya olasiz?' oyati necha marta takrorlangan?", a: "فَبِأَيِّ ءَالَآءِ رَبِّكُمَا تُكَذِّبَانِ", opts: ["31 marta", "28 marta", "33 marta"], c: 0 },
-            { juz: 23, level: 'easy', type: 'complete', q: "Yasin surasi 2-oyat:", a: "وَٱلۡقُرۡءَانِ", opts: ["ٱلۡحَكِيمِ", "ٱلۡكَرِيمِ", "ٱلۡمَجِيدِ", "ٱلۡعَظِيمِ"], c: 0 }
+    buildQuestionPool() {
+        const surahs = [
+            { id: 1, name: 'Al-Fatiha', ayahs: 7, category: 'tajwid' },
+            { id: 2, name: 'Al-Baqarah', ayahs: 286, category: 'hifz' },
+            { id: 3, name: 'Ali Imran', ayahs: 200, category: 'tafsir' },
+            { id: 4, name: 'An-Nisa', ayahs: 176, category: 'hifz' },
+            { id: 5, name: 'Al-Maaidah', ayahs: 120, category: 'tajwid' },
+            { id: 6, name: 'Al-Anam', ayahs: 165, category: 'hifz' },
+            { id: 7, name: 'Al-Araf', ayahs: 206, category: 'tafsir' },
+            { id: 8, name: 'Al-Anfal', ayahs: 75, category: 'hifz' },
+            { id: 9, name: 'At-Tawbah', ayahs: 129, category: 'tafsir' },
+            { id: 10, name: 'Yunus', ayahs: 109, category: 'tajwid' },
+            { id: 11, name: 'Hud', ayahs: 123, category: 'hifz' },
+            { id: 12, name: 'Yusuf', ayahs: 111, category: 'hifz' },
+            { id: 13, name: 'Ar-Ra\'ad', ayahs: 43, category: 'tajwid' },
+            { id: 14, name: 'Ibrahim', ayahs: 52, category: 'tafsir' },
+            { id: 15, name: 'Al-Hijr', ayahs: 99, category: 'hifz' },
+            { id: 16, name: 'An-Nahl', ayahs: 128, category: 'tafsir' },
+            { id: 17, name: 'Al-Isra', ayahs: 111, category: 'hifz' },
+            { id: 18, name: 'Al-Kahf', ayahs: 110, category: 'hifz' },
+            { id: 19, name: 'Maryam', ayahs: 98, category: 'tafsir' },
+            { id: 20, name: 'Taha', ayahs: 135, category: 'tajwid' },
+            { id: 21, name: 'Al-Anbiya', ayahs: 112, category: 'hifz' },
+            { id: 22, name: 'Al-Hajj', ayahs: 78, category: 'tafsir' },
+            { id: 23, name: 'Al-Mu\'minun', ayahs: 118, category: 'hifz' },
+            { id: 24, name: 'An-Nur', ayahs: 64, category: 'tajwid' },
+            { id: 25, name: 'Al-Furqan', ayahs: 77, category: 'tafsir' },
+            { id: 26, name: 'Ash-Shu\'ara', ayahs: 227, category: 'hifz' },
+            { id: 27, name: 'An-Naml', ayahs: 93, category: 'tafsir' },
+            { id: 28, name: 'Al-Qasas', ayahs: 88, category: 'hifz' },
+            { id: 29, name: 'Al-Ankabut', ayahs: 69, category: 'tajwid' },
+            { id: 30, name: 'Ar-Rum', ayahs: 60, category: 'tafsir' },
         ];
 
-        const HIKMATLAR = [
-            "Qur'on o'qilgan xonadon — nurga to'lgan xonadondir.",
-            "Ilm oling, zero ilm saodat kalitidir.",
-            "Sabr qiling, albatta Alloh sabrlilar bilan.",
-            "Qur'on sizning yo foydangizga, yoki zararingizga hujjatdir.",
-            "Eng yaxshingiz – Qur'onni o'rganib, o'rgatganingizdir.",
-            "Hifzni saqlash – uni yodlashdan qiyinroqdir.",
-            "Tilingizni Allohning zikri bilan namlab turing.",
-            "Gunohlar hifzni unuttiradi. Istig'forni ko'paytiring."
-        ];
-
-        // --- GLOBAL APP CONTROLLER ---
-        window.App = {
-            state: {
-                difficulty: 'medium',
-                questions: [],
-                currentIndex: 0,
-                score: 0,
-                total: 10,
-                isAnswered: false,
-                highScore: parseInt(localStorage.getItem('quran_highscore') || 0)
-            },
-
-            // Ilovani ishga tushirish
-            init: function() {
-                this.renderJuzGrid();
-                document.getElementById('display-highscore').innerText = this.state.highScore + "%";
-                
-                // Theme check
-                if(localStorage.getItem('theme') === 'dark') {
-                    document.body.setAttribute('data-theme', 'dark');
-                }
-            },
-
-            // --- NAVIGATSIYA ---
-            navigate: function(screenId) {
-                // Barcha seksiyalarni yashirish
-                document.querySelectorAll('section').forEach(el => {
-                    el.classList.add('hidden');
-                    el.classList.remove('active');
+        const pool = [];
+        surahs.forEach(surah => {
+            for (let ayahNum = 1; ayahNum <= Math.min(surah.ayahs, 10); ayahNum++) {
+                pool.push({
+                    questionId: `q_${surah.id}_${ayahNum}`,
+                    surahId: surah.id,
+                    surahName: surah.name,
+                    ayahNumber: ayahNum,
+                    category: surah.category,
+                    type: 'continuation', // or 'identification', 'meaning'
+                    difficulty: this.calculateDifficulty(surah.id, ayahNum),
                 });
-                
-                // Keraklisini ko'rsatish
-                const target = document.getElementById('page-' + screenId);
-                target.classList.remove('hidden');
-                
-                // Kichik animatsiya uchun
-                setTimeout(() => target.classList.add('active'), 10);
-                window.scrollTo(0,0);
-            },
-
-            // --- SOZLAMALAR ---
-            setDifficulty: function(level) {
-                this.state.difficulty = level;
-                // UI yangilash
-                ['easy', 'medium', 'hard'].forEach(l => {
-                    const btn = document.getElementById('diff-' + l);
-                    if (l === level) {
-                        btn.classList.add('btn-primary');
-                        btn.classList.remove('btn-outline');
-                    } else {
-                        btn.classList.add('btn-outline');
-                        btn.classList.remove('btn-primary');
-                    }
-                });
-            },
-
-            toggleTheme: function() {
-                const body = document.body;
-                const isDark = body.getAttribute('data-theme') === 'dark';
-                const newTheme = isDark ? 'light' : 'dark';
-                body.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-            },
-
-            // --- JUZ UI GENERATOR ---
-            renderJuzGrid: function() {
-                const container = document.getElementById('juz-container');
-                container.innerHTML = '';
-                for (let i = 1; i <= 30; i++) {
-                    const btn = document.createElement('div');
-                    btn.className = 'juz-box';
-                    btn.innerText = i;
-                    btn.onclick = () => this.startJuzTest(i);
-                    container.appendChild(btn);
-                }
-            },
-
-            // --- TEST MANTIQI (LOGIC) ---
-            startJuzTest: function(juzNumber) {
-                this.prepareQuestions(juzNumber);
-            },
-
-            startFullTest: function() {
-                this.prepareQuestions('full');
-            },
-
-            prepareQuestions: function(filter) {
-                let pool = [];
-
-                if (filter === 'full') {
-                    pool = [...QUESTION_DB];
-                } else {
-                    pool = QUESTION_DB.filter(q => q.juz === filter);
-                }
-
-                // Daraja bo'yicha filtrlash (ixtiyoriy, agar yetarli savol bo'lsa)
-                // Hozirgi DB kichik bo'lgani uchun, agar savol yetmasa, boshqa savollar bilan to'ldiramiz (MIX MODE).
-                // Haqiqiy appda faqat tanlangan daraja olinadi.
-                
-                // Agar savol kam bo'lsa, random savollar qo'shamiz (Foydalanuvchini xafa qilmaslik uchun)
-                if (pool.length < this.state.total) {
-                    const others = QUESTION_DB.filter(q => !pool.includes(q));
-                    pool = pool.concat(others);
-                }
-
-                // Randomizatsiya va kesish
-                this.state.questions = pool.sort(() => 0.5 - Math.random()).slice(0, this.state.total);
-                this.state.currentIndex = 0;
-                this.state.score = 0;
-                
-                this.navigate('quiz');
-                this.renderQuestion();
-            },
-
-            renderQuestion: function() {
-                const q = this.state.questions[this.state.currentIndex];
-                this.state.isAnswered = false;
-
-                // UI Update
-                document.getElementById('quiz-counter').innerText = `${this.state.currentIndex + 1} / ${this.state.total}`;
-                
-                // Progress Bar
-                const progress = ((this.state.currentIndex) / this.state.total) * 100;
-                document.getElementById('quiz-progress').style.width = `${progress}%`;
-
-                // Content
-                document.getElementById('question-text').innerText = q.q;
-                document.getElementById('ayah-box').innerText = q.a;
-
-                // Reset Panels
-                document.getElementById('hikmat-panel').style.display = 'none';
-                document.getElementById('btn-next').classList.add('hidden');
-
-                // Options Render
-                const optsContainer = document.getElementById('options-box');
-                optsContainer.innerHTML = '';
-
-                // Create array of answers with index tracking
-                let answers = q.opts.map((txt, idx) => ({ text: txt, isCorrect: idx === q.c }));
-                // Shuffle answers
-                answers.sort(() => 0.5 - Math.random());
-
-                answers.forEach(ans => {
-                    const btn = document.createElement('div');
-                    btn.className = 'option-item';
-                    btn.innerText = ans.text;
-                    btn.onclick = (e) => this.checkAnswer(e.target, ans.isCorrect, answers);
-                    optsContainer.appendChild(btn);
-                });
-            },
-
-            checkAnswer: function(el, isCorrect, allAnswers) {
-                if (this.state.isAnswered) return;
-                this.state.isAnswered = true;
-
-                // Variantlarni bloklash
-                const domOptions = document.querySelectorAll('.option-item');
-                domOptions.forEach(opt => opt.style.pointerEvents = 'none');
-
-                if (isCorrect) {
-                    el.classList.add('correct');
-                    this.state.score++;
-                } else {
-                    el.classList.add('wrong');
-                    // To'g'risini ko'rsatish
-                    domOptions.forEach(opt => {
-                        const originalText = allAnswers.find(a => a.isCorrect).text;
-                        if (opt.innerText === originalText) {
-                            opt.classList.add('correct');
-                        }
-                    });
-                }
-
-                // Hikmat Ko'rsatish
-                const randomHikmat = HIKMATLAR[Math.floor(Math.random() * HIKMATLAR.length)];
-                document.getElementById('hikmat-content').innerText = randomHikmat;
-                document.getElementById('hikmat-panel').style.display = 'block';
-
-                // Keyingi tugmasi
-                const btnNext = document.getElementById('btn-next');
-                btnNext.classList.remove('hidden');
-                btnNext.innerText = (this.state.currentIndex === this.state.total - 1) ? "NATIJANI KO'RISH" : "KEYINGI SAVOL →";
-                
-                // Update Progress visual to full for current step
-                document.getElementById('quiz-progress').style.width = `${((this.state.currentIndex + 1) / this.state.total) * 100}%`;
-            },
-
-            nextQuestion: function() {
-                if (this.state.currentIndex < this.state.total - 1) {
-                    this.state.currentIndex++;
-                    this.renderQuestion();
-                } else {
-                    this.finishQuiz();
-                }
-            },
-
-            finishQuiz: function() {
-                const score = this.state.score;
-                const total = this.state.total;
-                const percent = Math.round((score / total) * 100);
-
-                // Save High Score
-                if (percent > this.state.highScore) {
-                    this.state.highScore = percent;
-                    localStorage.setItem('quran_highscore', percent);
-                    document.getElementById('display-highscore').innerText = percent + "%";
-                }
-
-                // Result Screen Content
-                document.getElementById('res-score').innerText = percent + "%";
-                document.getElementById('res-correct').innerText = score;
-                document.getElementById('res-wrong').innerText = total - score;
-
-                // Message Logic
-                let msg = "";
-                if (percent === 100) msg = "MashaAlloh! Mukammal natija. Hifzingiz mustahkam.";
-                else if (percent >= 80) msg = "Barakalla! Juda yaxshi natija. Kichik xatolarni tuzating.";
-                else if (percent >= 50) msg = "Yomon emas, lekin takrorlashga muhtojsiz.";
-                else msg = "G'ayrat qiling! Ko'proq o'qish va takrorlash kerak.";
-                
-                document.getElementById('res-msg').innerText = msg;
-                this.navigate('result');
             }
+        });
+
+        return pool;
+    }
+
+    calculateDifficulty(surahId, ayahNum) {
+        const baseDifficulty = surahId <= 10 ? 1 : surahId <= 20 ? 2 : 3;
+        const ayahDifficulty = ayahNum <= 5 ? 0 : ayahNum <= 10 ? 1 : 2;
+        return Math.min(5, baseDifficulty + ayahDifficulty);
+    }
+
+    generateQuestions(count, testConfig) {
+        const { category, difficulty, surahId } = testConfig;
+
+        let availableQuestions = this.questionPool.filter(q => {
+            let matches = true;
+            if (category && q.category !== category) matches = false;
+            if (difficulty && q.difficulty !== difficulty) matches = false;
+            if (surahId && q.surahId !== surahId) matches = false;
+            if (this.usedQuestions.has(q.questionId)) matches = false;
+            return matches;
+        });
+
+        if (availableQuestions.length < count) {
+            this.usedQuestions.clear();
+            availableQuestions = this.questionPool.filter(q => {
+                let matches = true;
+                if (category && q.category !== category) matches = false;
+                if (difficulty && q.difficulty !== difficulty) matches = false;
+                if (surahId && q.surahId !== surahId) matches = false;
+                return matches;
+            });
+        }
+
+        const questions = [];
+        for (let i = 0; i < Math.min(count, availableQuestions.length); i++) {
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const question = availableQuestions[randomIndex];
+            questions.push(question);
+            this.usedQuestions.add(question.questionId);
+            availableQuestions.splice(randomIndex, 1);
+        }
+
+        return questions.map(q => ({
+            ...q,
+            options: this.generateOptions(q),
+            correctOptionIndex: 0,
+        }));
+    }
+
+    generateOptions(question) {
+        return ['A', 'B', 'C', 'D'];
+    }
+
+    markQuestionUsed(questionId) {
+        this.usedQuestions.add(questionId);
+    }
+
+    clearUsedQuestions() {
+        this.usedQuestions.clear();
+    }
+}
+
+// ============================================================
+// IQ SCORING ENGINE - Advanced Psychometric Calculation
+// ============================================================
+
+class IQScoringEngine {
+    static IQ_MIN = 50;
+    static IQ_MAX = 160;
+    static IQ_MEAN = 100;
+    static IQ_STDDEV = 15;
+
+    static calculateIQ(testResult, userHistory) {
+        const accuracy = this.calculateAccuracy(testResult);
+        const speedFactor = this.calculateSpeedFactor(testResult);
+        const difficultyFactor = this.calculateDifficultyFactor(testResult);
+        const consistencyFactor = this.calculateConsistency(testResult, userHistory);
+        const reasoningDepth = this.calculateReasoningDepth(testResult);
+
+        const weights = {
+            accuracy: 0.40,
+            speed: 0.20,
+            difficulty: 0.15,
+            consistency: 0.15,
+            reasoning: 0.10,
         };
 
-        // Ilova yuklanganda ishga tushirish
-        window.onload = function() {
-            App.init();
+        const compositeScore =
+            accuracy * weights.accuracy +
+            speedFactor * weights.speed +
+            difficultyFactor * weights.difficulty +
+            consistencyFactor * weights.consistency +
+            reasoningDepth * weights.reasoning;
+
+        let iqScore = this.IQ_MEAN + compositeScore * this.IQ_STDDEV;
+        iqScore = Math.max(this.IQ_MIN, Math.min(this.IQ_MAX, Math.round(iqScore)));
+
+        return {
+            iq: iqScore,
+            components: {
+                accuracy: (accuracy * 100).toFixed(1),
+                speed: (speedFactor * 100).toFixed(1),
+                difficulty: (difficultyFactor * 100).toFixed(1),
+                consistency: (consistencyFactor * 100).toFixed(1),
+                reasoning: (reasoningDepth * 100).toFixed(1),
+            },
+            level: this.getLevel(iqScore),
+        };
+    }
+
+    static calculateAccuracy(testResult) {
+        const { responses, questions } = testResult;
+        const correct = responses.filter((resp, idx) => 
+            resp.selectedOptionIndex === questions[idx].correctOptionIndex
+        ).length;
+        return Math.min(1, correct / responses.length);
+    }
+
+    static calculateSpeedFactor(testResult) {
+        const avgTimeMs = testResult.totalTimeMs / testResult.responses.length;
+        const normalizedTime = Math.min(avgTimeMs / 30000, 1); // 30 sec per question baseline
+        return 1 - (normalizedTime * 0.3); // Speed accounts for 30% variance
+    }
+
+    static calculateDifficultyFactor(testResult) {
+        const avgDifficulty = testResult.questions.reduce((sum, q) => sum + q.difficulty, 0) / testResult.questions.length;
+        return Math.min(1, avgDifficulty / 5); // Normalized to 0-1
+    }
+
+    static calculateConsistency(testResult, userHistory) {
+        if (!userHistory || userHistory.length < 2) return 0.5;
+
+        const recentScores = userHistory.slice(-5).map(h => h.accuracy);
+        const variance = this.variance(recentScores);
+        const consistency = Math.max(0, 1 - variance);
+
+        return Math.min(1, consistency);
+    }
+
+    static calculateReasoningDepth(testResult) {
+        const categoryCounts = {};
+        testResult.questions.forEach(q => {
+            categoryCounts[q.category] = (categoryCounts[q.category] || 0) + 1;
+        });
+
+        const uniqueCategories = Object.keys(categoryCounts).length;
+        return Math.min(1, uniqueCategories / 3); // Max 3 categories
+    }
+
+    static variance(arr) {
+        const mean = arr.reduce((a, b) => a + b) / arr.length;
+        const squareDiffs = arr.map(value => Math.pow(value - mean, 2));
+        return squareDiffs.reduce((a, b) => a + b) / arr.length;
+    }
+
+    static getLevel(iq) {
+        if (iq >= 145) return { name: 'Genius', code: 'genius', rank: 1 };
+        if (iq >= 130) return { name: 'Very Superior', code: 'very_superior', rank: 2 };
+        if (iq >= 115) return { name: 'Superior', code: 'superior', rank: 3 };
+        if (iq >= 100) return { name: 'Average', code: 'average', rank: 4 };
+        if (iq >= 85) return { name: 'Below Average', code: 'below_average', rank: 5 };
+        return { name: 'Significantly Below Average', code: 'significantly_below', rank: 6 };
+    }
+
+    static percentileRank(iq) {
+        // Using normal distribution approximation
+        const z = (iq - this.IQ_MEAN) / this.IQ_STDDEV;
+        return this.normalCDF(z) * 100;
+    }
+
+    static normalCDF(z) {
+        return (1 + Math.erf(z / Math.sqrt(2))) / 2;
+    }
+
+    static erf(x) {
+        const a1 = 0.254829592;
+        const a2 = -0.284496736;
+        const a3 = 1.421413741;
+        const a4 = -1.453152027;
+        const a5 = 1.061405429;
+        const p = 0.3275911;
+
+        const sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+
+        const t = 1 / (1 + p * x);
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const t4 = t3 * t;
+        const t5 = t4 * t;
+
+        return sign * (1 - (((((a5 * t5 + a4 * t4) + a3 * t3) + a2 * t2) + a1 * t) * Math.exp(-x * x)));
+    }
+}
+
+// ============================================================
+// SMART ADAPTIVE ENGINE - Intelligent Difficulty & Learning
+// ============================================================
+
+class SmartAdaptiveEngine {
+    constructor(userHistory = []) {
+        this.userHistory = userHistory;
+        this.performanceTrend = this.calculateTrend();
+    }
+
+    calculateTrend() {
+        if (this.userHistory.length < 2) return 'stable';
+
+        const recentResults = this.userHistory.slice(-5);
+        const scores = recentResults.map(r => r.iq);
+
+        let trending = 0;
+        for (let i = 1; i < scores.length; i++) {
+            trending += scores[i] - scores[i - 1];
+        }
+
+        const avgTrend = trending / (scores.length - 1);
+
+        if (avgTrend > 5) return 'improving';
+        if (avgTrend < -5) return 'declining';
+        return 'stable';
+    }
+
+    recommendNextDifficulty() {
+        if (this.userHistory.length === 0) return 'medium';
+
+        const lastResult = this.userHistory[this.userHistory.length - 1];
+        const accuracy = parseFloat(lastResult.components.accuracy);
+
+        if (this.performanceTrend === 'improving') {
+            if (accuracy > 80) return 'hard';
+            if (accuracy > 65) return 'medium';
+            return 'easy';
+        }
+
+        if (this.performanceTrend === 'declining') {
+            if (accuracy < 50) return 'easy';
+            if (accuracy < 65) return 'medium';
+            return 'medium';
+        }
+
+        // Stable trend
+        if (accuracy > 85) return 'hard';
+        if (accuracy > 70) return 'medium';
+        if (accuracy > 50) return 'easy';
+        return 'easy';
+    }
+
+    recommendNextCategory() {
+        if (this.userHistory.length === 0) return 'hifz';
+
+        const categoryPerformance = {};
+
+        this.userHistory.forEach(result => {
+            result.questions.forEach((q, idx) => {
+                const category = q.category;
+                if (!categoryPerformance[category]) {
+                    categoryPerformance[category] = { correct: 0, total: 0 };
+                }
+                categoryPerformance[category].total++;
+                if (result.responses[idx].selectedOptionIndex === q.correctOptionIndex) {
+                    categoryPerformance[category].correct++;
+                }
+            });
+        });
+
+        let weakestCategory = 'hifz';
+        let lowestAccuracy = 1;
+
+        Object.entries(categoryPerformance).forEach(([category, stats]) => {
+            const accuracy = stats.correct / stats.total;
+            if (accuracy < lowestAccuracy) {
+                lowestAccuracy = accuracy;
+                weakestCategory = category;
+            }
+        });
+
+        return weakestCategory;
+    }
+
+    estimateNextTestDuration() {
+        if (this.userHistory.length === 0) return 600000; // 10 minutes default
+
+        const recentTimes = this.userHistory.slice(-3).map(r => r.totalTimeMs);
+        const avgTime = recentTimes.reduce((a, b) => a + b) / recentTimes.length;
+
+        return Math.round(avgTime * 1.1); // 10% buffer
+    }
+
+    getMotivationalMessage(currentResult) {
+        const trend = this.performanceTrend;
+        const accuracy = parseFloat(currentResult.components.accuracy);
+        const previousIQ = this.userHistory.length > 0 ? this.userHistory[this.userHistory.length - 1].iq : 100;
+        const iqChange = currentResult.iq - previousIQ;
+
+        if (accuracy >= 90 && iqChange > 0) {
+            return 'exceptional_progress';
+        }
+        if (accuracy >= 80 && trend === 'improving') {
+            return 'strong_improvement';
+        }
+        if (accuracy >= 70) {
+            return 'good_effort';
+        }
+        if (accuracy >= 50 && iqChange >= -5) {
+            return 'steady_progress';
+        }
+        return 'keep_trying';
+    }
+}
+
+// ============================================================
+// AUDIO MANAGER - Pure Logic Audio Control
+// ============================================================
+
+class AudioManager {
+    constructor() {
+        this.currentReciter = null;
+        this.isPlaying = false;
+        this.currentAudioUrl = null;
+        this.audioElement = null;
+        this.playbackListeners = [];
+        this.reciters = {
+            'afasi': { id: 'afasi', name: 'Al-Afasi', endpoint: 'https://cdn.example.com/recitation/afasi/{surah}.mp3' },
+            'minshawi': { id: 'minshawi', name: 'Minshawi', endpoint: 'https://cdn.example.com/recitation/minshawi/{surah}.mp3' },
+            'dosari': { id: 'dosari', name: 'Al-Dosari', endpoint: 'https://cdn.example.com/recitation/dosari/{surah}.mp3' },
+            'ghamadi': { id: 'ghamadi', name: 'Ghamadi', endpoint: 'https://cdn.example.com/recitation/ghamadi/{surah}.mp3' },
+            'ajami': { id: 'ajami', name: 'Ajami', endpoint: 'https://cdn.example.com/recitation/ajami/{surah}.mp3' },
+            'hudhaifi': { id: 'hudhaifi', name: 'Hudhaifi', endpoint: 'https://cdn.example.com/recitation/hudhaifi/{surah}.mp3' },
+        };
+    }
+
+    selectReciter(reciterId) {
+        if (!this.reciters[reciterId]) {
+            throw new Error(`Reciter ${reciterId} not found`);
+        }
+        this.stop();
+        this.currentReciter = reciterId;
+        this.notifyListeners('reciter:changed', { reciterId });
+    }
+
+    prepareAudio(surahId) {
+        if (!this.currentReciter) {
+            throw new Error('No reciter selected');
+        }
+
+        const reciter = this.reciters[this.currentReciter];
+        const audioUrl = reciter.endpoint.replace('{surah}', surahId);
+
+        this.currentAudioUrl = audioUrl;
+        return {
+            url: audioUrl,
+            reciter: this.currentReciter,
+            surahId: surahId,
+        };
+    }
+
+    play(surahId) {
+        if (this.isPlaying) {
+            this.stop();
+        }
+
+        const audioConfig = this.prepareAudio(surahId);
+
+        this.isPlaying = true;
+        this.notifyListeners('audio:playing', audioConfig);
+
+        return audioConfig;
+    }
+
+    stop() {
+        if (!this.isPlaying) return;
+
+        this.isPlaying = false;
+        this.currentAudioUrl = null;
+        this.notifyListeners('audio:stopped', {});
+    }
+
+    pause() {
+        if (!this.isPlaying) return;
+
+        this.isPlaying = false;
+        this.notifyListeners('audio:paused', {});
+    }
+
+    resume() {
+        if (this.isPlaying || !this.currentAudioUrl) return;
+
+        this.isPlaying = true;
+        this.notifyListeners('audio:resumed', { url: this.currentAudioUrl });
+    }
+
+    getAvailableReciters() {
+        return Object.values(this.reciters).map(r => ({ id: r.id, name: r.name }));
+    }
+
+    getStatus() {
+        return {
+            isPlaying: this.isPlaying,
+            currentReciter: this.currentReciter,
+            currentAudioUrl: this.currentAudioUrl,
+        };
+    }
+
+    onPlaybackEvent(callback) {
+        this.playbackListeners.push(callback);
+    }
+
+    notifyListeners(eventType, data) {
+        this.playbackListeners.forEach(cb => {
+            try {
+                cb({ type: eventType, data });
+            } catch (error) {
+                console.error(`Listener error: ${error.message}`);
+            }
+        });
+    }
+}
+
+// ============================================================
+// LANGUAGE MANAGER - Multilingual System
+// ============================================================
+
+class LanguageManager {
+    static DEFAULT_LANGUAGE = 'uz';
+
+    static translations = {
+        uz: {
+            'welcome': 'Xush kelibsiz!',
+            'test.start': 'Testni boshlash',
+            'test.finish': 'Testni tugatish',
+            'test.reset': 'Testni qayta boshlash',
+            'answer.submit': 'Javob berish',
+            'answer.correct': 'To\'g\'ri javob!',
+            'answer.incorrect': 'Xato javob',
+            'result.title': 'Test Natijasi',
+            'result.score': 'Natija',
+            'result.iq': 'Qur\'onIQ Reyting',
+            'result.level': 'Darajasi',
+            'stat.total_tests': 'Jami testlar',
+            'stat.total_questions': 'Jami savollar',
+            'stat.correct_answers': 'To\'g\'ri javoblar',
+            'stat.accuracy': 'To\'g\'rilik foizи',
+            'stat.best_iq': 'Eng yuqori IQ',
+            'motivation.exceptional': 'Ajoyib natija! Siz brilliant ko\'rsatdingiz!',
+            'motivation.strong': 'Kuchli o\'sish! Davom ettiring!',
+            'motivation.good': 'Yaxshi sa\'y! Yanada o\'rganing!',
+            'motivation.steady': 'Barqaror iralamoq! Siz tez ortasiz!',
+            'motivation.keep_trying': 'Yana urinib ko\'ring! Siz qolib yetasiz!',
+            'error.no_test': 'Hech qanday test boshlangan emas',
+            'error.reciter_not_found': 'Qori topilmadi',
+            'error.language_not_supported': 'Tili qo\'llab-quvvatlanmaydi',
+        },
+        ru: {
+            'welcome': 'Добро пожаловать!',
+            'test.start': 'Начать тест',
+            'test.finish': 'Завершить тест',
+            'test.reset': 'Перезагрузить тест',
+            'answer.submit': 'Отправить ответ',
+            'answer.correct': 'Правильный ответ!',
+            'answer.incorrect': 'Неправильный ответ',
+            'result.title': 'Результат теста',
+            'result.score': 'Результат',
+            'result.iq': 'Рейтинг Куран IQ',
+            'result.level': 'Уровень',
+            'stat.total_tests': 'Всего тестов',
+            'stat.total_questions': 'Всего вопросов',
+            'stat.correct_answers': 'Правильные ответы',
+            'stat.accuracy': 'Точность %',
+            'stat.best_iq': 'Лучший IQ',
+            'motivation.exceptional': 'Исключительный результат! Вы блестящи!',
+            'motivation.strong': 'Сильный прогресс! Продолжайте!',
+            'motivation.good': 'Хорошее усилие! Учитесь больше!',
+            'motivation.steady': 'Стабильный прогресс! Вы быстро улучшаетесь!',
+            'motivation.keep_trying': 'Попробуйте снова! Вы почти там!',
+            'error.no_test': 'Тест не начинался',
+            'error.reciter_not_found': 'Чтец не найден',
+            'error.language_not_supported': 'Язык не поддерживается',
+        },
+        en: {
+            'welcome': 'Welcome!',
+            'test.start': 'Start Test',
+            'test.finish': 'Finish Test',
+            'test.reset': 'Reset Test',
+            'answer.submit': 'Submit Answer',
+            'answer.correct': 'Correct Answer!',
+            'answer.incorrect': 'Incorrect Answer',
+            'result.title': 'Test Result',
+            'result.score': 'Score',
+            'result.iq': 'Qur\'anIQ Rating',
+            'result.level': 'Level',
+            'stat.total_tests': 'Total Tests',
+            'stat.total_questions': 'Total Questions',
+            'stat.correct_answers': 'Correct Answers',
+            'stat.accuracy': 'Accuracy %',
+            'stat.best_iq': 'Best IQ',
+            'motivation.exceptional': 'Exceptional result! You are brilliant!',
+            'motivation.strong': 'Strong progress! Keep it up!',
+            'motivation.good': 'Good effort! Learn more!',
+            'motivation.steady': 'Steady progress! You are improving quickly!',
+            'motivation.keep_trying': 'Try again! You are almost there!',
+            'error.no_test': 'No test started',
+            'error.reciter_not_found': 'Reciter not found',
+            'error.language_not_supported': 'Language not supported',
+        },
+        ar: {
+            'welcome': 'أهلا وسهلا!',
+            'test.start': 'ابدأ الاختبار',
+            'test.finish': 'أنهي الاختبار',
+            'test.reset': 'أعد تشغيل الاختبار',
+            'answer.submit': 'أرسل الإجابة',
+            'answer.correct': 'إجابة صحيحة!',
+            'answer.incorrect': 'إجابة خاطئة',
+            'result.title': 'نتيجة الاختبار',
+            'result.score': 'النتيجة',
+            'result.iq': 'تقييم قرآن IQ',
+            'result.level': 'المستوى',
+            'stat.total_tests': 'إجمالي الاختبارات',
+            'stat.total_questions': 'إجمالي الأسئلة',
+            'stat.correct_answers': 'الإجابات الصحيحة',
+            'stat.accuracy': 'دقة %',
+            'stat.best_iq': 'أفضل معدل ذكاء',
+            'motivation.exceptional': 'نتيجة استثنائية! أنت عبقري!',
+            'motivation.strong': 'تقدم قوي! استمر!',
+            'motivation.good': 'جهد جيد! تعلم أكثر!',
+            'motivation.steady': 'تقدم مستقر! أنت تتحسن بسرعة!',
+            'motivation.keep_trying': 'حاول مرة أخرى! أنت قريب جدا!',
+            'error.no_test': 'لم يتم بدء اختبار',
+            'error.reciter_not_found': 'لم يتم العثور على القارئ',
+            'error.language_not_supported': 'اللغة غير مدعومة',
+        },
+    };
+
+    static get(key, language = this.DEFAULT_LANGUAGE) {
+        if (!this.translations[language]) {
+            language = this.DEFAULT_LANGUAGE;
+        }
+
+        return this.translations[language][key] || this.translations[this.DEFAULT_LANGUAGE][key] || key;
+    }
+
+    static getSupportedLanguages() {
+        return Object.keys(this.translations);
+    }
+
+    static validateLanguage(language) {
+        return this.translations.hasOwnProperty(language);
+    }
+
+    static setDefaultLanguage(language) {
+        if (this.validateLanguage(language)) {
+            this.DEFAULT_LANGUAGE = language;
+            return true;
+        }
+        return false;
+    }
+
+    static addTranslation(language, key, value) {
+        if (!this.translations[language]) {
+            this.translations[language] = {};
+        }
+        this.translations[language][key] = value;
+    }
+}
+
+// ============================================================
+// MOTIVATION ENGINE - Qur'anic Praise & Encouragement
+// ============================================================
+
+class MotivationEngine {
+    static quranicWisdoms = [
+        {
+            text: 'Read the Quran with proper Tarteel (measured recitation).',
+            source: 'Quran 73:4',
+            category: 'tajwid',
+            language: 'en',
+        },
+        {
+            text: 'Reflect deeply on the Quran\'s meanings.',
+            source: 'Quran 47:24',
+            category: 'tafsir',
+            language: 'en',
+        },
+        {
+            text: 'Do not lose hope in Allah\'s mercy.',
+            source: 'Quran 39:53',
+            category: 'motivation',
+            language: 'en',
+        },
+        {
+            text: 'Verily, with hardship comes ease.',
+            source: 'Quran 94:5',
+            category: 'motivation',
+            language: 'en',
+        },
+        {
+            text: 'The best of you are those who learn the Quran and teach it.',
+            source: 'Sahih Bukhari',
+            category: 'hifz',
+            language: 'en',
+        },
+    ];
+
+    static getPraiseMessage(performanceLevel, iqScore) {
+        const baseMessages = {
+            exceptional: [
+                'Mashaallah! Your brilliance shines through.',
+                'SubhanAllah! You demonstrated exceptional understanding.',
+                'Alhamdulillah! Your performance was outstanding.',
+            ],
+            strong: [
+                'Well done! Your dedication is showing results.',
+                'Great effort! Keep this momentum going.',
+                'Excellent work! You are progressing beautifully.',
+            ],
+            good: [
+                'Good job! You are making solid progress.',
+                'Nice work! With continued effort, you will excel.',
+                'Well attempted! Each attempt makes you stronger.',
+            ],
+            steady: [
+                'You are on the right path. Keep going!',
+                'Every step forward counts. Continue learning.',
+                'Progress is not always linear. Stay persistent.',
+            ],
+            encouraging: [
+                'Do not be discouraged. Every expert was once a beginner.',
+                'Your effort is not in vain. Keep practicing.',
+                'With patience and dedication, success will come.',
+            ],
         };
 
-    </script>
-</body>
-</html>
+        const messageArray = baseMessages[performanceLevel] || baseMessages.encouraging;
+        return messageArray[Math.floor(Math.random() * messageArray.length)];
+    }
 
+    static getWisdomForCategory(category) {
+        const categoryWisdoms = this.quranicWisdoms.filter(w => w.category === category);
+        if (categoryWisdoms.length === 0) return this.quranicWisdoms[0];
+        return categoryWisdoms[Math.floor(Math.random() * categoryWisdoms.length)];
+    }
 
+    static getMotivationalPackage(testResult, adaptiveEngine) {
+        const performanceLevel = adaptiveEngine.getMotivationalMessage(testResult);
+
+        return {
+            praise: this.getPraiseMessage(performanceLevel, testResult.iq),
+            wisdom: this.getWisdomForCategory(testResult.recommendedCategory || 'motivation'),
+            nextStep: adaptiveEngine.recommendNextCategory(),
+            nextDifficulty: adaptiveEngine.recommendNextDifficulty(),
+            performanceLevel: performanceLevel,
+        };
+    }
+
+    static validateWisdom(wisdom) {
+        // Ensure wisdom comes from authenticated Quranic sources
+        const authenticSources = [
+            'Quran',
+            'Sahih Bukhari',
+            'Sahih Muslim',
+            'Jami Tirmidhi',
+            'Sunan Ibn Majah',
+        ];
+
+        const sourceMatch = wisdom.source.split(' ')[0];
+        return authenticSources.includes(sourceMatch);
+    }
+}
+
+// ============================================================
+// RESULT ANALYZER - Comprehensive Performance Analysis
+// ============================================================
+
+class ResultAnalyzer {
+    static analyzeStrengths(testResult) {
+        const categoryPerformance = {};
+
+        testResult.questions.forEach((question, idx) => {
+            const category = question.category;
+            const isCorrect = testResult.responses[idx].selectedOptionIndex === question.correctOptionIndex;
+
+            if (!categoryPerformance[category]) {
+                categoryPerformance[category] = { correct: 0, total: 0 };
+            }
+
+            categoryPerformance[category].total++;
+            if (isCorrect) categoryPerformance[category].correct++;
+        });
+
+        const strengths = Object.entries(categoryPerformance)
+            .filter(([_, stats]) => stats.correct / stats.total >= 0.75)
+            .map(([category, stats]) => ({
+                category,
+                accuracy: ((stats.correct / stats.total) * 100).toFixed(1),
+                questionCount: stats.total,
+            }));
+
+        return strengths;
+    }
+
+    static analyzeWeaknesses(testResult) {
+        const categoryPerformance = {};
+
+        testResult.questions.forEach((question, idx) => {
+            const category = question.category;
+            const isCorrect = testResult.responses[idx].selectedOptionIndex === question.correctOptionIndex;
+
+            if (!categoryPerformance[category]) {
+                categoryPerformance[category] = { correct: 0, total: 0 };
+            }
+
+            categoryPerformance[category].total++;
+            if (isCorrect) categoryPerformance[category].correct++;
+        });
+
+        const weaknesses = Object.entries(categoryPerformance)
+            .filter(([_, stats]) => stats.correct / stats.total < 0.75)
+            .map(([category, stats]) => ({
+                category,
+                accuracy: ((stats.correct / stats.total) * 100).toFixed(1),
+                questionCount: stats.total,
+            }))
+            .sort((a, b) => parseFloat(a.accuracy) - parseFloat(b.accuracy));
+
+        return weaknesses;
+    }
+
+    static generateRecommendations(strengths, weaknesses) {
+        const recommendations = [];
+
+        if (weaknesses.length > 0) {
+            const primaryWeakness = weaknesses[0];
+            recommendations.push({
+                priority: 'high',
+                type: 'focus_area',
+                category: primaryWeakness.category,
+                suggestion: `Focus more on ${primaryWeakness.category}. Your accuracy here is ${primaryWeakness.accuracy}%.`,
+                action: `increase_practice_${primaryWeakness.category}`,
+            });
+        }
+
+        if (strengths.length > 0) {
+            const strength = strengths[0];
+            recommendations.push({
+                priority: 'medium',
+                type: 'leverage_strength',
+                category: strength.category,
+                suggestion: `You excel in ${strength.category}. Build on this success.`,
+                action: 'maintain_excellence',
+            });
+        }
+
+        if (weaknesses.length >= 2) {
+            recommendations.push({
+                priority: 'medium',
+                type: 'targeted_study',
+                suggestion: `Create a study plan targeting your weaker areas.`,
+                action: 'create_study_plan',
+            });
+        }
+
+        return recommendations;
+    }
+
+    static generateComprehensiveReport(testResult, userHistory) {
+        const strengths = this.analyzeStrengths(testResult);
+        const weaknesses = this.analyzeWeaknesses(testResult);
+        const recommendations = this.generateRecommendations(strengths, weaknesses);
+
+        return {
+            testId: testResult.testId,
+            timestamp: testResult.completedAt,
+            iq: testResult.iq,
+            level: testResult.level,
+            accuracy: testResult.components.accuracy,
+            strengths,
+            weaknesses,
+            recommendations,
+            progress: userHistory.length > 0 ? {
+                previousIQ: userHistory[userHistory.length - 1].iq,
+                iqChange: testResult.iq - userHistory[userHistory.length - 1].iq,
+                trend: this.calculateTrend(userHistory),
+            } : null,
+        };
+    }
+
+    static calculateTrend(userHistory) {
+        if (userHistory.length < 2) return 'insufficient_data';
+
+        const recent = userHistory.slice(-3).map(h => h.iq);
+        let trend = 0;
+
+        for (let i = 1; i < recent.length; i++) {
+            trend += recent[i] - recent[i - 1];
+        }
+
+        const avgTrend = trend / (recent.length - 1);
+
+        if (avgTrend > 3) return 'improving';
+        if (avgTrend < -3) return 'declining';
+        return 'stable';
+    }
+}
+
+// ============================================================
+// EXPORT (for module systems)
+// ============================================================
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        CoreController,
+        TestEngine,
+        IQScoringEngine,
+        SmartAdaptiveEngine,
+        AudioManager,
+        LanguageManager,
+        MotivationEngine,
+        ResultAnalyzer,
+    };
+}
