@@ -3,60 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartFlash - Ultra-Smart Learning</title>
+    <title>SmartFlash Pro - Ultra Intelligent Learning</title>
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS (via CDN for standalone portability) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Icons -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Configuration -->
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         brand: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            900: '#134e4a',
+                            50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a',
                         },
-                        dark: {
-                            bg: '#0f172a',
-                            card: '#1e293b',
-                            surface: '#334155'
-                        }
+                        dark: { bg: '#0f172a', card: '#1e293b', surface: '#334155' }
                     },
                     animation: {
-                        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        'fade-in': 'fadeIn 0.2s ease-out',
-                        'bounce-sm': 'bounceSmall 0.2s',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'pop': 'pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     },
                     keyframes: {
-                        slideUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: 0 },
-                            '100%': { transform: 'translateY(0)', opacity: 1 },
-                        },
-                        fadeIn: {
-                            '0%': { opacity: 0 },
-                            '100%': { opacity: 1 },
-                        },
-                        bounceSmall: {
-                            '0%, 100%': { transform: 'scale(1)' },
-                            '50%': { transform: 'scale(0.95)' },
-                        }
+                        slideIn: { '0%': { transform: 'translateY(20px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
+                        pop: { '0%': { transform: 'scale(0.9)' }, '100%': { transform: 'scale(1)' } }
                     }
                 }
             }
@@ -64,718 +40,645 @@
     </script>
 
     <style>
-        /* Custom Styles & Glassmorphism */
-        body {
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
-        }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .dark .glass {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        .dark .glass-panel {
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Card 3D Flip */
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
-
-        /* Scrollbar hiding */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Gestures */
-        .card-stack {
-            transition: transform 0.1s linear;
-            cursor: grab;
-        }
-        .card-stack:active { cursor: grabbing; }
-        .card-animating {
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
-        }
         
-        /* Floating Action Button Pulse */
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(20, 184, 166, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
-        }
-        .fab-pulse { animation: pulse-glow 2s infinite; }
+        /* Loading Spinner */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-dark-bg dark:text-gray-100 transition-colors duration-300 font-sans h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-50 text-gray-900 dark:bg-dark-bg dark:text-gray-100 font-sans h-[100dvh] flex flex-col overflow-hidden selection:bg-brand-500 selection:text-white">
 
-    <!-- App Container -->
-    <div id="app" class="flex-1 flex flex-col relative h-full max-w-md mx-auto w-full bg-white dark:bg-dark-bg shadow-2xl overflow-hidden">
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex-1 flex flex-col relative max-w-lg mx-auto w-full bg-white dark:bg-dark-bg shadow-2xl h-full">
         
-        <!-- Header -->
-        <header class="px-6 pt-12 pb-4 flex justify-between items-center z-20 bg-white/80 dark:bg-dark-bg/80 backdrop-blur-md sticky top-0">
-            <div>
-                <h1 class="text-2xl font-extrabold bg-gradient-to-r from-brand-500 to-blue-500 bg-clip-text text-transparent">SmartFlash</h1>
-                <p id="header-greeting" class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">Welcome back</p>
+        <!-- HEADER -->
+        <header class="px-5 pt-12 pb-4 flex justify-between items-center bg-white/90 dark:bg-dark-bg/90 backdrop-blur-md z-20 border-b border-gray-100 dark:border-gray-800">
+            <div onclick="Router.go('home')" class="cursor-pointer">
+                <h1 class="text-xl font-extrabold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SmartFlash Pro</h1>
+                <p class="text-[10px] text-gray-400 font-semibold tracking-wide">ULTRA INTELLIGENT SYSTEM</p>
             </div>
-            <div class="flex gap-3">
-                <div class="flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/30 px-3 py-1 rounded-full border border-brand-100 dark:border-brand-900/50">
-                    <i class="fa-solid fa-fire text-orange-500 text-sm"></i>
-                    <span id="streak-counter" class="text-sm font-bold text-brand-700 dark:text-brand-400">0</span>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 px-3 py-1 rounded-full border border-orange-100 dark:border-orange-900/30">
+                    <i class="fa-solid fa-fire text-orange-500 text-xs"></i>
+                    <span id="streak-display" class="text-xs font-bold text-orange-600 dark:text-orange-400">0</span>
                 </div>
-                <button onclick="App.toggleTheme()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-transform active:scale-95">
-                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                <button onclick="UI.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center transition active:scale-95">
+                    <i id="theme-icon" class="fa-solid fa-moon text-gray-500"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main id="main-content" class="flex-1 overflow-y-auto overflow-x-hidden relative scroll-smooth no-scrollbar p-6 pb-24">
-            <!-- Dynamic Content Injected Here -->
+        <!-- MAIN CONTENT AREA -->
+        <main id="view-container" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-28 no-scrollbar relative">
+            <!-- Views will be injected here via JavaScript -->
         </main>
 
-        <!-- Navigation Bar -->
-        <nav class="absolute bottom-0 w-full glass-panel border-t border-gray-200 dark:border-gray-800 pb-safe z-30">
-            <div class="flex justify-around items-center h-16 pb-2">
-                <button onclick="App.navigate('home')" class="nav-btn group flex flex-col items-center justify-center w-full h-full text-brand-600 dark:text-brand-400">
-                    <i class="fa-solid fa-house text-xl mb-1 transition-transform group-active:scale-90"></i>
-                    <span class="text-[10px] font-medium" data-i18n="nav.home">Home</span>
-                </button>
-                <button onclick="App.navigate('decks')" class="nav-btn group flex flex-col items-center justify-center w-full h-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fa-solid fa-layer-group text-xl mb-1 transition-transform group-active:scale-90"></i>
-                    <span class="text-[10px] font-medium" data-i18n="nav.decks">Decks</span>
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="absolute bottom-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 pb-safe z-30">
+            <div class="flex justify-around items-center h-16">
+                <button onclick="Router.go('home')" class="nav-btn w-full h-full flex flex-col items-center justify-center gap-1 text-gray-400 active:text-brand-500">
+                    <i class="fa-solid fa-house text-lg"></i>
+                    <span class="text-[10px] font-medium">Asosiy</span>
                 </button>
                 
-                <!-- Floating Add Button -->
-                <div class="-mt-8">
-                    <button onclick="App.openCreator()" class="w-14 h-14 bg-brand-500 hover:bg-brand-600 text-white rounded-full shadow-lg shadow-brand-500/40 flex items-center justify-center transition-transform active:scale-90 fab-pulse">
-                        <i class="fa-solid fa-plus text-2xl"></i>
+                <div class="-mt-8 relative">
+                    <button onclick="UI.openCreateModal()" class="w-14 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-full shadow-lg shadow-brand-500/40 flex items-center justify-center transform transition active:scale-90">
+                        <i class="fa-solid fa-plus text-xl"></i>
                     </button>
                 </div>
 
-                <button onclick="App.navigate('stats')" class="nav-btn group flex flex-col items-center justify-center w-full h-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fa-solid fa-chart-pie text-xl mb-1 transition-transform group-active:scale-90"></i>
-                    <span class="text-[10px] font-medium" data-i18n="nav.stats">Stats</span>
-                </button>
-                <button onclick="App.navigate('settings')" class="nav-btn group flex flex-col items-center justify-center w-full h-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fa-solid fa-gear text-xl mb-1 transition-transform group-active:scale-90"></i>
-                    <span class="text-[10px] font-medium" data-i18n="nav.settings">Settings</span>
+                <button onclick="Router.go('profile')" class="nav-btn w-full h-full flex flex-col items-center justify-center gap-1 text-gray-400 active:text-brand-500">
+                    <i class="fa-solid fa-chart-simple text-lg"></i>
+                    <span class="text-[10px] font-medium">Profil</span>
                 </button>
             </div>
-            <!-- Footer Attribution -->
-            <div class="w-full text-center py-1 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-                <p class="text-[10px] text-gray-400 font-medium tracking-wide">© Muhammad Daler tomonidan yasalgan</p>
+            <div class="w-full text-center py-1 bg-gray-50 dark:bg-[#0b1120] border-t border-gray-100 dark:border-gray-800">
+                <p class="text-[9px] text-gray-400">© Muhammad Daler tomonidan yasalgan</p>
             </div>
         </nav>
 
-        <!-- Overlay Modals -->
-        <div id="modal-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="App.closeModal()"></div>
-        
-        <!-- Creator Modal -->
-        <div id="creator-modal" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-card rounded-t-3xl p-6 z-50 transform translate-y-full transition-transform duration-300 max-w-md mx-auto shadow-2xl border-t border-gray-100 dark:border-gray-700 h-[85vh] flex flex-col">
-            <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-6"></div>
-            <h2 class="text-xl font-bold mb-4 dark:text-white" data-i18n="create.title">Yangi Karta Yaratish</h2>
-            
-            <div class="flex-1 overflow-y-auto no-scrollbar space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1" data-i18n="create.deck">Deck</label>
-                    <select id="new-card-deck" class="w-full p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border-none focus:ring-2 focus:ring-brand-500 dark:text-white outline-none">
-                        <!-- Decks populated here -->
-                    </select>
+        <!-- MODALS -->
+        <!-- Create Card/Deck Modal -->
+        <div id="create-modal" class="fixed inset-0 z-50 hidden">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="UI.closeCreateModal()"></div>
+            <div class="absolute bottom-0 w-full bg-white dark:bg-dark-card rounded-t-3xl p-6 transform transition-transform duration-300 translate-y-full" id="create-modal-content">
+                <div class="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6"></div>
+                
+                <!-- Tabs -->
+                <div class="flex p-1 bg-gray-100 dark:bg-dark-surface rounded-xl mb-6">
+                    <button onclick="UI.switchCreateTab('card')" id="tab-card" class="flex-1 py-2 text-sm font-bold rounded-lg shadow-sm bg-white dark:bg-dark-card text-brand-600 dark:text-white transition-all">Karta</button>
+                    <button onclick="UI.switchCreateTab('deck')" id="tab-deck" class="flex-1 py-2 text-sm font-bold rounded-lg text-gray-500 dark:text-gray-400 transition-all">To'plam</button>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1" data-i18n="create.front">Savol (Front)</label>
-                    <textarea id="new-card-front" rows="3" class="w-full p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border-none focus:ring-2 focus:ring-brand-500 dark:text-white outline-none resize-none" placeholder="Enter question..."></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1" data-i18n="create.back">Javob (Back)</label>
-                    <textarea id="new-card-back" rows="3" class="w-full p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border-none focus:ring-2 focus:ring-brand-500 dark:text-white outline-none resize-none" placeholder="Enter answer..."></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1" data-i18n="create.type">Type</label>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="Creator.setType('basic')" class="flex-1 py-2 rounded-lg bg-brand-500 text-white text-sm font-medium">Basic</button>
-                        <button type="button" onclick="Creator.setType('cloze')" class="flex-1 py-2 rounded-lg bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-300 text-sm font-medium">Cloze</button>
+
+                <!-- Create Card Form -->
+                <div id="form-card" class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase ml-1">Qaysi To'plamga?</label>
+                        <select id="inp-deck-select" class="w-full mt-1 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border border-gray-200 dark:border-gray-700 focus:border-brand-500 outline-none dark:text-white transition">
+                            <!-- Options injected via JS -->
+                        </select>
                     </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase ml-1">Savol (Front)</label>
+                        <textarea id="inp-front" rows="2" class="w-full mt-1 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border border-gray-200 dark:border-gray-700 focus:border-brand-500 outline-none dark:text-white transition resize-none" placeholder="Masalan: Apple tarjimasi?"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase ml-1">Javob (Back)</label>
+                        <textarea id="inp-back" rows="2" class="w-full mt-1 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border border-gray-200 dark:border-gray-700 focus:border-brand-500 outline-none dark:text-white transition resize-none" placeholder="Masalan: Olma"></textarea>
+                    </div>
+                    <button onclick="Actions.createCard()" class="w-full py-3.5 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 active:scale-95 transition">SAQLASH</button>
+                </div>
+
+                <!-- Create Deck Form -->
+                <div id="form-deck" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase ml-1">To'plam Nomi</label>
+                        <input type="text" id="inp-deck-name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl border border-gray-200 dark:border-gray-700 focus:border-brand-500 outline-none dark:text-white transition" placeholder="Masalan: Ingliz tili so'zlar">
+                    </div>
+                    <button onclick="Actions.createDeck()" class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 active:scale-95 transition">TO'PLAM YARATISH</button>
                 </div>
             </div>
-            
-            <button onclick="Creator.saveCard()" class="w-full mt-4 bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/30 active:scale-95 transition-transform" data-i18n="create.save">
-                Saqlash
-            </button>
         </div>
 
     </div>
 
-    <!-- Scripts -->
+    <!-- JAVASCRIPT ENGINE -->
     <script>
         /**
-         * SmartFlash Logic Core
-         * Uses Module Pattern for separation of concerns
+         * SMART FLASH PRO - CORE ENGINE
+         * 1. DB: LocalStorage wrapper
+         * 2. SRS: Spaced Repetition Logic
+         * 3. State: App state management
+         * 4. UI: Rendering logic
          */
 
-        // --- Localization System ---
-        const I18n = {
-            lang: 'uz', // Default
-            translations: {
-                uz: {
-                    'nav.home': 'Bosh sahifa',
-                    'nav.decks': 'To\'plamlar',
-                    'nav.stats': 'Statistika',
-                    'nav.settings': 'Sozlamalar',
-                    'home.due': 'Takrorlash vaqti',
-                    'home.start': 'Boshlash',
-                    'home.empty': 'Hozircha hammasi bajarildi!',
-                    'create.title': 'Yangi Karta',
-                    'create.deck': 'To\'plam',
-                    'create.front': 'Savol (Front)',
-                    'create.back': 'Javob (Back)',
-                    'create.save': 'Saqlash',
-                    'study.show': 'Javobni ko\'rish',
-                    'study.again': 'Qayta',
-                    'study.hard': 'Qiyin',
-                    'study.good': 'Yaxshi',
-                    'study.easy': 'Oson',
-                    'stats.level': 'Daraja',
-                    'stats.xp': 'XP',
-                    'settings.lang': 'Tilni o\'zgartirish',
-                    'settings.reset': 'Ma\'lumotlarni o\'chirish'
-                },
-                en: {
-                    'nav.home': 'Home',
-                    'nav.decks': 'Decks',
-                    'nav.stats': 'Stats',
-                    'nav.settings': 'Settings',
-                    'home.due': 'Cards Due',
-                    'home.start': 'Start Session',
-                    'home.empty': 'All caught up!',
-                    'create.title': 'New Card',
-                    'create.deck': 'Deck',
-                    'create.front': 'Front',
-                    'create.back': 'Back',
-                    'create.save': 'Save Card',
-                    'study.show': 'Show Answer',
-                    'study.again': 'Again',
-                    'study.hard': 'Hard',
-                    'study.good': 'Good',
-                    'study.easy': 'Easy',
-                    'stats.level': 'Level',
-                    'stats.xp': 'Total XP',
-                    'settings.lang': 'Change Language',
-                    'settings.reset': 'Reset Data'
-                }
-            },
-            t(key) {
-                return this.translations[this.lang][key] || key;
-            },
-            setLang(lang) {
-                this.lang = lang;
-                App.render();
-            }
-        };
-
-        // --- Data Store (LocalStorage) ---
-        const Store = {
+        // --- 1. DATABASE ENGINE ---
+        const DB = {
+            key: 'smartflash_pro_v2',
             data: {
-                user: { xp: 0, level: 1, streak: 0, lastStudyDate: null, settings: { lang: 'uz' } },
-                decks: [
-                    { id: 'd1', name: 'General Knowledge', color: 'bg-blue-500' },
-                    { id: 'd2', name: 'English Vocabulary', color: 'bg-purple-500' }
-                ],
-                cards: []
+                user: { xp: 0, level: 1, streak: 0, lastStudy: null },
+                decks: [], // { id, name, created }
+                cards: []  // { id, deckId, front, back, srs: { interval, ease, due, reviews } }
             },
+
             init() {
-                const saved = localStorage.getItem('smartflash_db_v1');
-                if (saved) {
-                    this.data = JSON.parse(saved);
-                    I18n.lang = this.data.user.settings.lang || 'uz';
+                const stored = localStorage.getItem(this.key);
+                if (stored) {
+                    try {
+                        this.data = JSON.parse(stored);
+                        // Migration/Repair if needed
+                        if (!this.data.decks) this.data.decks = [];
+                        if (!this.data.cards) this.data.cards = [];
+                    } catch (e) {
+                        console.error("Data corrupted, resetting", e);
+                        this.seed();
+                    }
                 } else {
-                    // Seed initial data
-                    this.addCard('d1', 'O\'zbekiston poytaxti?', 'Toshkent');
-                    this.addCard('d1', 'HTML nimani anglatadi?', 'HyperText Markup Language');
-                    this.addCard('d2', 'Apple tarjimasi?', 'Olma');
-                    this.save();
+                    this.seed();
                 }
-                this.checkStreak();
             },
+
             save() {
-                localStorage.setItem('smartflash_db_v1', JSON.stringify(this.data));
+                localStorage.setItem(this.key, JSON.stringify(this.data));
             },
-            addCard(deckId, front, back, type = 'basic') {
-                const card = {
-                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    deckId, front, back, type,
-                    srs: { interval: 0, ease: 2.5, reviews: 0, dueDate: Date.now() },
-                    created: Date.now()
-                };
-                this.data.cards.push(card);
+
+            seed() {
+                // Initial Default Data
+                this.data.decks = [
+                    { id: 'd_default', name: 'Umumiy bilimlar', created: Date.now() },
+                    { id: 'd_english', name: 'Ingliz tili (Demo)', created: Date.now() }
+                ];
+                this.data.cards = [
+                    { id: 'c_1', deckId: 'd_default', front: 'O\'zbekiston poytaxti?', back: 'Toshkent', srs: this.defaultSRS() },
+                    { id: 'c_2', deckId: 'd_english', front: 'Hello', back: 'Salom', srs: this.defaultSRS() }
+                ];
                 this.save();
             },
-            getDueCards() {
-                const now = Date.now();
-                return this.data.cards.filter(c => c.srs.dueDate <= now);
-            },
-            checkStreak() {
-                const today = new Date().toDateString();
-                const last = this.data.user.lastStudyDate;
-                if (last !== today) {
-                    // Logic to reset if missed a day could go here
-                    // Simple logic: if last < yesterday, streak = 0. 
-                    // For now, we just track current streak logic in updateStats
-                }
-            },
-            updateStats(xpGain) {
-                const today = new Date().toDateString();
-                if (this.data.user.lastStudyDate !== today) {
-                    this.data.user.streak++;
-                    this.data.user.lastStudyDate = today;
-                }
-                this.data.user.xp += xpGain;
-                this.data.user.level = Math.floor(Math.sqrt(this.data.user.xp / 100)) + 1;
-                this.save();
-                App.updateHeader();
+
+            defaultSRS() {
+                return { interval: 0, ease: 2.5, due: Date.now(), reviews: 0 };
             }
         };
 
-        // --- Spaced Repetition Algorithm (Modified SM-2) ---
-        const SRS = {
-            calculate(card, quality) {
-                // quality: 0 (Again), 3 (Hard), 4 (Good), 5 (Easy)
+        // --- 2. INTELLIGENT SRS ALGORITHM (SM-2 Modified) ---
+        const SmartEngine = {
+            calculate(card, grade) {
+                // grade: 0=Again, 3=Hard, 4=Good, 5=Easy
                 let { interval, ease, reviews } = card.srs;
+                const now = Date.now();
 
-                if (quality === 0) {
-                    interval = 0; // Reset
-                    reviews = 0;
+                if (grade === 0) {
+                    // Forgot: Reset interval
+                    interval = 0; 
+                    reviews = 0; // Reset streak
                 } else {
-                    if (reviews === 0) interval = 1; // 1 day
-                    else if (reviews === 1) interval = 6; // 6 days
+                    // Success
+                    if (reviews === 0) interval = 1; // 1st time: 1 day (logic tweaked below)
+                    else if (reviews === 1) interval = 6;
                     else interval = Math.round(interval * ease);
                     
                     reviews++;
                 }
 
-                // Adjust Ease
-                ease = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+                // Adjust Ease Factor
+                ease = ease + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
                 if (ease < 1.3) ease = 1.3;
 
-                // Set new due date (minutes vs days logic simplified for demo)
-                // For demo: interval is treated as "minutes" for immediate feedback if interval < 10, else "hours"
-                // Production: Use days. 
-                // Hybrid approach for this prototype:
-                let nextDue = Date.now();
-                if (quality === 0) nextDue += 1 * 60 * 1000; // 1 min
-                else if (quality === 3) nextDue += 10 * 60 * 1000; // 10 mins
-                else nextDue += interval * 24 * 60 * 60 * 1000; // Days
+                // Time Calculation (Minutes vs Days)
+                let addedTime = 0;
+                if (grade === 0) addedTime = 1 * 60 * 1000; // 1 minute (Again)
+                else if (grade === 3) addedTime = 10 * 60 * 1000; // 10 minutes (Hard)
+                else if (interval <= 1) addedTime = 24 * 60 * 60 * 1000; // 1 day
+                else addedTime = interval * 24 * 60 * 60 * 1000; // N days
 
-                card.srs = { interval, ease, reviews, dueDate: nextDue };
-                Store.save();
+                card.srs = {
+                    interval: interval,
+                    ease: ease,
+                    due: now + addedTime,
+                    reviews: reviews
+                };
+
                 return card;
-            }
-        };
-
-        // --- Creator Controller ---
-        const Creator = {
-            currentType: 'basic',
-            setType(type) {
-                this.currentType = type;
-                // update UI active state logic if needed
             },
-            saveCard() {
-                const deckId = document.getElementById('new-card-deck').value;
-                const front = document.getElementById('new-card-front').value;
-                const back = document.getElementById('new-card-back').value;
-                
-                if (!front || !back) return alert('Please fill fields');
-                
-                Store.addCard(deckId, front, back, this.currentType);
-                
-                // Clear and close
-                document.getElementById('new-card-front').value = '';
-                document.getElementById('new-card-back').value = '';
-                App.closeModal();
-                App.render(); // Refresh home if needed
-                
-                // Success Toast
-                alert('Karta saqlandi!'); // Replace with toast in v2
+
+            getDueCards(deckId) {
+                const now = Date.now();
+                return DB.data.cards.filter(c => c.deckId === deckId && c.srs.due <= now);
+            },
+            
+            getAllCount(deckId) {
+                return DB.data.cards.filter(c => c.deckId === deckId).length;
             }
         };
 
-        // --- Study Mode Controller ---
-        const Study = {
-            queue: [],
-            currentCard: null,
-            isFlipped: false,
+        // --- 3. ACTIONS & CONTROLLERS ---
+        const Actions = {
+            createDeck() {
+                const name = document.getElementById('inp-deck-name').value.trim();
+                if (!name) return alert("Iltimos, nom yozing!");
+
+                const newDeck = {
+                    id: 'd_' + Date.now(),
+                    name: name,
+                    created: Date.now()
+                };
+
+                DB.data.decks.push(newDeck);
+                DB.save();
+                
+                document.getElementById('inp-deck-name').value = '';
+                UI.closeCreateModal();
+                Router.go('home');
+            },
+
+            createCard() {
+                const deckId = document.getElementById('inp-deck-select').value;
+                const front = document.getElementById('inp-front').value.trim();
+                const back = document.getElementById('inp-back').value.trim();
+
+                if (!front || !back) return alert("Savol va javobni kiriting!");
+
+                const newCard = {
+                    id: 'c_' + Date.now(),
+                    deckId: deckId,
+                    front: front,
+                    back: back,
+                    srs: DB.defaultSRS()
+                };
+
+                DB.data.cards.push(newCard);
+                DB.save();
+
+                // Clear inputs but keep modal open for rapid entry
+                document.getElementById('inp-front').value = '';
+                document.getElementById('inp-back').value = '';
+                document.getElementById('inp-front').focus();
+                
+                // Show tiny feedback
+                const btn = event.target;
+                const originalText = btn.innerText;
+                btn.innerText = "SAQLANDI!";
+                btn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('bg-green-600');
+                }, 1000);
+                
+                // If we are in deck view, refresh it
+                if (Router.currentParams && Router.currentParams.deckId === deckId) {
+                    Router.go('deck', { deckId });
+                } else {
+                    Router.go('home'); // Refresh counts
+                }
+            },
+
+            deleteDeck(id) {
+                if(!confirm("To'plamni va uning ichidagi barcha kartalarni o'chirasizmi?")) return;
+                DB.data.decks = DB.data.decks.filter(d => d.id !== id);
+                DB.data.cards = DB.data.cards.filter(c => c.deckId !== id);
+                DB.save();
+                Router.go('home');
+            },
             
-            start() {
-                this.queue = Store.getDueCards().sort((a,b) => a.srs.dueDate - b.srs.dueDate);
-                if (this.queue.length === 0) return;
+            deleteCard(id) {
+                if(!confirm("Kartani o'chirasizmi?")) return;
+                DB.data.cards = DB.data.cards.filter(c => c.id !== id);
+                DB.save();
+                // Refresh current view
+                if(StudySession.active) StudySession.next();
+                else Router.go('home');
+            }
+        };
+
+        // --- 4. STUDY SESSION MANAGER ---
+        const StudySession = {
+            queue: [],
+            current: null,
+            active: false,
+            isFlipped: false,
+
+            start(deckId) {
+                this.queue = SmartEngine.getDueCards(deckId);
+                if (this.queue.length === 0) {
+                    alert("Bu to'plamda hozircha takrorlash uchun kartalar yo'q!");
+                    return;
+                }
+                this.active = true;
+                Router.renderView('study');
                 this.next();
             },
 
             next() {
                 if (this.queue.length === 0) {
-                    App.navigate('home');
+                    this.finish();
                     return;
                 }
-                this.currentCard = this.queue[0];
+                this.current = this.queue[0];
                 this.isFlipped = false;
                 this.renderCard();
             },
 
             renderCard() {
-                const container = document.getElementById('main-content');
-                const c = this.currentCard;
+                const container = document.getElementById('study-card-container');
+                const controls = document.getElementById('study-controls');
                 
-                // Cloze Logic
-                let displayFront = c.front;
-                if(c.type === 'cloze') {
-                    // Simple regex for {{c1::Answer}} -> [...]
-                    displayFront = displayFront.replace(/{{c1::(.*?)}}/g, '<span class="text-brand-500 font-bold">[...]</span>');
-                }
-
-                const html = `
-                    <div class="h-full flex flex-col justify-between pt-4">
-                        <div class="relative w-full h-[65vh] perspective-1000 group cursor-pointer" onclick="Study.flip()">
-                            <div id="flashcard" class="relative w-full h-full text-center transition-all duration-500 transform-style-3d shadow-xl rounded-3xl">
-                                <!-- Front -->
-                                <div class="absolute inset-0 backface-hidden bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-700 rounded-3xl flex flex-col items-center justify-center p-8">
-                                    <span class="absolute top-6 left-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Savol</span>
-                                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed">${displayFront}</p>
-                                </div>
-                                <!-- Back -->
-                                <div class="absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-dark-card border border-brand-100 dark:border-brand-900 rounded-3xl flex flex-col items-center justify-center p-8">
-                                    <span class="absolute top-6 left-6 text-xs font-bold text-brand-500 uppercase tracking-widest">Javob</span>
-                                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-4">${c.front}</p>
-                                    <div class="w-12 h-1 bg-gray-200 rounded-full mb-6"></div>
-                                    <p class="text-2xl font-bold text-brand-600 dark:text-brand-400 leading-relaxed">${c.back}</p>
-                                </div>
+                // Front Logic
+                container.innerHTML = `
+                     <div class="relative w-full h-full perspective-1000 transition-all duration-500" id="flashcard">
+                        <div class="relative w-full h-full transform-style-3d shadow-2xl rounded-3xl transition-transform duration-500" id="card-inner">
+                            <!-- FRONT -->
+                            <div class="absolute inset-0 backface-hidden bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-700 rounded-3xl flex flex-col items-center justify-center p-8 text-center">
+                                <span class="absolute top-6 left-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">SAVOL</span>
+                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed">${this.current.front}</p>
                             </div>
-                        </div>
-
-                        <!-- Controls -->
-                        <div id="study-controls" class="h-24 flex items-center justify-center">
-                            <button onclick="Study.flip()" class="w-full bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">
-                                ${I18n.t('study.show')}
-                            </button>
-                        </div>
-                        
-                        <div id="answer-buttons" class="hidden h-24 grid-cols-4 gap-2">
-                            <button onclick="Study.answer(0)" class="flex flex-col items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600 rounded-2xl active:scale-95 transition">
-                                <span class="text-sm font-bold">${I18n.t('study.again')}</span>
-                                <span class="text-[10px] opacity-70">1m</span>
-                            </button>
-                            <button onclick="Study.answer(3)" class="flex flex-col items-center justify-center bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-2xl active:scale-95 transition">
-                                <span class="text-sm font-bold">${I18n.t('study.hard')}</span>
-                                <span class="text-[10px] opacity-70">10m</span>
-                            </button>
-                            <button onclick="Study.answer(4)" class="flex flex-col items-center justify-center bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-2xl active:scale-95 transition">
-                                <span class="text-sm font-bold">${I18n.t('study.good')}</span>
-                                <span class="text-[10px] opacity-70">1d</span>
-                            </button>
-                            <button onclick="Study.answer(5)" class="flex flex-col items-center justify-center bg-green-100 dark:bg-green-900/30 text-green-600 rounded-2xl active:scale-95 transition">
-                                <span class="text-sm font-bold">${I18n.t('study.easy')}</span>
-                                <span class="text-[10px] opacity-70">4d</span>
-                            </button>
+                            <!-- BACK -->
+                            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-slate-50 dark:bg-dark-surface border border-brand-100 dark:border-brand-900 rounded-3xl flex flex-col items-center justify-center p-8 text-center">
+                                <span class="absolute top-6 left-6 text-[10px] font-bold text-brand-500 uppercase tracking-widest">JAVOB</span>
+                                <p class="text-lg text-gray-400 mb-6 line-through decoration-brand-500/50 decoration-2">${this.current.front}</p>
+                                <p class="text-3xl font-extrabold text-brand-600 dark:text-brand-400 leading-relaxed">${this.current.back}</p>
+                            </div>
                         </div>
                     </div>
                 `;
-                container.innerHTML = html;
-                
-                // Initialize Swipe Gestures
-                this.initGestures();
+
+                // Reset buttons
+                document.getElementById('btn-show').classList.remove('hidden');
+                document.getElementById('grid-grading').classList.add('hidden');
             },
 
             flip() {
                 if (this.isFlipped) return;
                 this.isFlipped = true;
-                document.getElementById('flashcard').classList.add('rotate-y-180');
-                document.getElementById('study-controls').classList.add('hidden');
-                document.getElementById('answer-buttons').classList.remove('hidden');
-                document.getElementById('answer-buttons').classList.add('grid');
+                document.getElementById('card-inner').classList.add('rotate-y-180');
+                document.getElementById('btn-show').classList.add('hidden');
+                document.getElementById('grid-grading').classList.remove('hidden');
+                document.getElementById('grid-grading').classList.add('grid');
             },
 
-            answer(quality) {
-                // Remove from queue
-                this.queue.shift();
-                
-                // Update SRS
-                SRS.calculate(this.currentCard, quality);
-                
-                // Gamification
-                let xp = quality === 5 ? 15 : quality === 4 ? 10 : 2;
-                Store.updateStats(xp);
+            grade(quality) {
+                // Update Card Data
+                const cardIndex = DB.data.cards.findIndex(c => c.id === this.current.id);
+                if (cardIndex !== -1) {
+                    DB.data.cards[cardIndex] = SmartEngine.calculate(DB.data.cards[cardIndex], quality);
+                    DB.save();
+                }
 
-                // Animation out
-                const cardEl = document.getElementById('flashcard').parentElement;
-                cardEl.classList.add('animate-slide-up'); // Actually slide out
+                // Gamification: XP
+                const xpMap = { 0: 1, 3: 5, 4: 10, 5: 15 };
+                DB.data.user.xp += xpMap[quality];
+                DB.save();
+                UI.updateHeader();
+
+                // Animation & Next
+                const cardEl = document.getElementById('flashcard');
+                cardEl.classList.add('opacity-0', 'translate-y-[-20px]', 'transition-all', 'duration-300');
                 
-                setTimeout(() => {
-                    this.next();
-                }, 200);
+                this.queue.shift(); // Remove from temporary queue
+                setTimeout(() => this.next(), 300);
             },
 
-            initGestures() {
-                const el = document.getElementById('flashcard');
-                let startX = 0;
-                let currentX = 0;
-
-                el.addEventListener('touchstart', e => {
-                    if (!this.isFlipped) return; // Only swipe after flip
-                    startX = e.touches[0].clientX;
-                    el.style.transition = 'none';
-                }, {passive: true});
-
-                el.addEventListener('touchmove', e => {
-                    if (!this.isFlipped) return;
-                    currentX = e.touches[0].clientX;
-                    let diff = currentX - startX;
-                    el.style.transform = `rotateY(180deg) translateX(${diff}px) rotateZ(${diff * 0.05}deg)`;
-                    
-                    // Visual feedback could go here (change border color)
-                }, {passive: true});
-
-                el.addEventListener('touchend', e => {
-                    if (!this.isFlipped) return;
-                    let diff = currentX - startX;
-                    el.style.transition = 'transform 0.3s ease';
-                    
-                    if (diff > 100) {
-                        // Swipe Right (Good/Easy)
-                        el.style.transform = `rotateY(180deg) translateX(500px)`;
-                        this.answer(4);
-                    } else if (diff < -100) {
-                        // Swipe Left (Again/Hard)
-                        el.style.transform = `rotateY(180deg) translateX(-500px)`;
-                        this.answer(0);
-                    } else {
-                        // Reset
-                        el.style.transform = `rotateY(180deg)`;
-                    }
-                });
+            finish() {
+                this.active = false;
+                alert("Tabriklaymiz! Barcha kartalar takrorlandi.");
+                Router.go('home');
             }
         };
 
-        // --- View Renderer ---
-        const App = {
-            currentPage: 'home',
-
-            init() {
-                Store.init();
-                this.render();
-                this.updateHeader();
+        // --- 5. UI ROUTER & RENDERER ---
+        const Router = {
+            currentParams: null,
+            go(viewName, params = null) {
+                this.currentParams = params;
                 
-                // Check theme preference
-                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                    document.getElementById('theme-icon').className = 'fa-solid fa-sun';
-                }
-            },
-
-            navigate(page) {
-                // Update Active Nav State
+                // Update Bottom Nav Active State
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('text-brand-600', 'dark:text-brand-400'));
-                // Simple hack for active state, in prod use unique IDs
-                
-                this.currentPage = page;
-                this.render();
+                if (viewName === 'home') document.querySelectorAll('.nav-btn')[0].classList.add('text-brand-600', 'dark:text-brand-400');
+                if (viewName === 'profile') document.querySelectorAll('.nav-btn')[2].classList.add('text-brand-600', 'dark:text-brand-400');
+
+                this.renderView(viewName, params);
             },
 
-            updateHeader() {
-                document.getElementById('streak-counter').innerText = Store.data.user.streak;
-            },
+            renderView(viewName, params) {
+                const container = document.getElementById('view-container');
+                container.innerHTML = ''; // Clear
 
-            toggleTheme() {
-                document.documentElement.classList.toggle('dark');
-                if (document.documentElement.classList.contains('dark')) {
-                    localStorage.theme = 'dark';
-                    document.getElementById('theme-icon').className = 'fa-solid fa-sun';
-                } else {
-                    localStorage.theme = 'light';
-                    document.getElementById('theme-icon').className = 'fa-solid fa-moon';
-                }
-            },
+                // --- HOME VIEW ---
+                if (viewName === 'home') {
+                    const totalDue = DB.data.decks.reduce((sum, d) => sum + SmartEngine.getDueCards(d.id).length, 0);
 
-            openCreator() {
-                const modal = document.getElementById('creator-modal');
-                const overlay = document.getElementById('modal-overlay');
-                const deckSelect = document.getElementById('new-card-deck');
-                
-                // Populate decks
-                deckSelect.innerHTML = Store.data.decks.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                
-                modal.style.transform = 'translateY(0)';
-            },
-
-            closeModal() {
-                const modal = document.getElementById('creator-modal');
-                const overlay = document.getElementById('modal-overlay');
-                
-                modal.style.transform = 'translateY(100%)';
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            },
-
-            render() {
-                const container = document.getElementById('main-content');
-                container.innerHTML = '';
-                container.className = 'flex-1 overflow-y-auto overflow-x-hidden relative scroll-smooth no-scrollbar p-6 pb-24 animate-fade-in';
-
-                // --- HOME PAGE ---
-                if (this.currentPage === 'home') {
-                    const dueCount = Store.getDueCards().length;
-                    
-                    const html = `
-                        <!-- Progress Card -->
-                        <div class="glass-panel rounded-3xl p-6 mb-8 relative overflow-hidden">
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
-                            <div class="relative z-10">
-                                <h2 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-1">${dueCount}</h2>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 uppercase tracking-wider font-semibold">${I18n.t('home.due')}</p>
-                                
-                                ${dueCount > 0 ? `
-                                    <button onclick="Study.start()" class="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2 transition-all active:scale-95">
-                                        <i class="fa-solid fa-play"></i>
-                                        ${I18n.t('home.start')}
-                                    </button>
-                                ` : `
-                                    <div class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-2xl flex items-center justify-center gap-2">
-                                        <i class="fa-solid fa-check-circle"></i>
-                                        ${I18n.t('home.empty')}
-                                    </div>
-                                `}
-                            </div>
+                    let html = `
+                        <div class="mb-6 animate-slide-in">
+                            <h2 class="text-2xl font-bold dark:text-white mb-1">To'plamlarim</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Jami takrorlash kerak: <span class="text-brand-500 font-bold">${totalDue} ta karta</span></p>
                         </div>
-
-                        <!-- Decks Grid Preview -->
-                        <div class="grid grid-cols-2 gap-4">
-                            ${Store.data.decks.map(deck => {
-                                const count = Store.data.cards.filter(c => c.deckId === deck.id).length;
-                                return `
-                                <div class="glass rounded-2xl p-4 flex flex-col justify-between h-32 hover:bg-white/50 transition">
-                                    <div class="w-10 h-10 ${deck.color} rounded-full flex items-center justify-center text-white text-lg shadow-md">
-                                        <i class="fa-solid fa-book"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight mb-1">${deck.name}</h3>
-                                        <p class="text-xs text-gray-400">${count} cards</p>
-                                    </div>
-                                </div>
-                                `;
-                            }).join('')}
-                        </div>
+                        <div class="space-y-4 animate-slide-in">
                     `;
-                    container.innerHTML = html;
-                }
 
-                // --- DECKS PAGE ---
-                else if (this.currentPage === 'decks') {
-                    const html = `
-                        <h2 class="text-2xl font-bold mb-6 dark:text-white">${I18n.t('nav.decks')}</h2>
-                        <div class="space-y-4">
-                            ${Store.data.decks.map(deck => {
-                                const count = Store.data.cards.filter(c => c.deckId === deck.id).length;
-                                return `
-                                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    if (DB.data.decks.length === 0) {
+                        html += `<div class="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl">Hozircha to'plam yo'q. <br> "+" tugmasini bosing.</div>`;
+                    } else {
+                        DB.data.decks.forEach(deck => {
+                            const due = SmartEngine.getDueCards(deck.id).length;
+                            const total = SmartEngine.getAllCount(deck.id);
+                            
+                            html += `
+                                <div onclick="Router.go('deck', {deckId: '${deck.id}'})" class="group bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform">
                                     <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 ${deck.color} rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-brand-500/20">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-blue-500/20">
                                             <i class="fa-solid fa-layer-group"></i>
                                         </div>
                                         <div>
-                                            <h3 class="font-bold text-lg dark:text-white">${deck.name}</h3>
-                                            <p class="text-xs text-gray-400 font-medium">${count} cards</p>
+                                            <h3 class="font-bold text-lg dark:text-white group-hover:text-brand-500 transition-colors">${deck.name}</h3>
+                                            <p class="text-xs text-gray-400 font-medium">${total} ta karta • <span class="${due > 0 ? 'text-red-500 font-bold' : 'text-green-500'}">${due} ta kutmoqda</span></p>
                                         </div>
                                     </div>
-                                    <button class="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400">
-                                        <i class="fa-solid fa-chevron-right"></i>
-                                    </button>
+                                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
                                 </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    `;
+                            `;
+                        });
+                    }
+                    html += `</div>`;
                     container.innerHTML = html;
                 }
 
-                // --- STATS PAGE ---
-                else if (this.currentPage === 'stats') {
-                    const u = Store.data.user;
-                    container.innerHTML = `
-                        <h2 class="text-2xl font-bold mb-6 dark:text-white">${I18n.t('nav.stats')}</h2>
-                        
-                        <div class="bg-gradient-to-br from-brand-500 to-cyan-600 rounded-3xl p-6 text-white mb-6 shadow-xl relative overflow-hidden">
-                            <i class="fa-solid fa-trophy absolute -bottom-4 -right-4 text-9xl text-white opacity-10"></i>
-                            <div class="relative z-10">
-                                <p class="text-brand-100 font-medium text-sm mb-1">${I18n.t('stats.level')}</p>
-                                <h1 class="text-5xl font-black mb-4">${u.level}</h1>
-                                <div class="w-full bg-black/20 h-2 rounded-full overflow-hidden mb-2">
-                                    <div class="bg-white h-full" style="width: ${(u.xp % 100)}%"></div>
-                                </div>
-                                <p class="text-xs text-brand-100 text-right">${u.xp} XP Total</p>
-                            </div>
-                        </div>
+                // --- DECK DETAIL VIEW ---
+                else if (viewName === 'deck') {
+                    const deck = DB.data.decks.find(d => d.id === params.deckId);
+                    if (!deck) return this.go('home'); // Error handling
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white dark:bg-dark-card p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                <i class="fa-solid fa-fire text-orange-500 text-2xl mb-2"></i>
-                                <h3 class="text-2xl font-bold dark:text-white">${u.streak}</h3>
-                                <p class="text-xs text-gray-400">Day Streak</p>
+                    const dueCount = SmartEngine.getDueCards(deck.id).length;
+                    const totalCount = SmartEngine.getAllCount(deck.id);
+
+                    container.innerHTML = `
+                        <div class="animate-slide-in">
+                            <button onclick="Router.go('home')" class="mb-4 text-sm text-gray-500 hover:text-brand-500 flex items-center gap-2">
+                                <i class="fa-solid fa-arrow-left"></i> Ortga
+                            </button>
+                            
+                            <div class="bg-white dark:bg-dark-card rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 mb-6">
+                                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">${deck.name}</h2>
+                                <div class="flex gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
+                                    <span><i class="fa-solid fa-box-open mr-1"></i> ${totalCount} Jami</span>
+                                    <span><i class="fa-regular fa-clock mr-1"></i> ${dueCount} Kutmoqda</span>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <button onclick="StudySession.start('${deck.id}')" class="flex-1 py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 active:scale-95 transition flex justify-center items-center gap-2">
+                                        <i class="fa-solid fa-play"></i> BOSHLASH
+                                    </button>
+                                    <button onclick="Actions.deleteDeck('${deck.id}')" class="w-14 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="bg-white dark:bg-dark-card p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                <i class="fa-solid fa-brain text-purple-500 text-2xl mb-2"></i>
-                                <h3 class="text-2xl font-bold dark:text-white">${Store.data.cards.length}</h3>
-                                <p class="text-xs text-gray-400">Total Cards</p>
+
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 ml-2">Kartalar Ro'yxati</h3>
+                            <div class="space-y-3 pb-10">
+                                ${DB.data.cards.filter(c => c.deckId === deck.id).map(card => `
+                                    <div class="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex justify-between items-center group">
+                                        <div>
+                                            <p class="font-medium text-gray-800 dark:text-gray-200 text-sm line-clamp-1">${card.front}</p>
+                                            <p class="text-xs text-gray-400 line-clamp-1">${card.back}</p>
+                                        </div>
+                                        <button onclick="Actions.deleteCard('${card.id}')" class="text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                `).join('') || '<p class="text-center text-sm text-gray-400 py-4">Hozircha kartalar yo\'q</p>'}
                             </div>
                         </div>
                     `;
                 }
 
-                // --- SETTINGS PAGE ---
-                else if (this.currentPage === 'settings') {
+                // --- STUDY VIEW ---
+                else if (viewName === 'study') {
                     container.innerHTML = `
-                        <h2 class="text-2xl font-bold mb-6 dark:text-white">${I18n.t('nav.settings')}</h2>
-                        <div class="space-y-4">
-                            <div class="bg-white dark:bg-dark-card p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-800">
-                                <span class="font-medium dark:text-gray-200">${I18n.t('settings.lang')}</span>
-                                <div class="flex gap-2">
-                                    <button onclick="I18n.setLang('uz')" class="px-3 py-1 rounded-lg ${I18n.lang === 'uz' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'} text-xs font-bold">UZ</button>
-                                    <button onclick="I18n.setLang('en')" class="px-3 py-1 rounded-lg ${I18n.lang === 'en' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'} text-xs font-bold">EN</button>
+                        <div class="h-full flex flex-col pt-2 animate-pop">
+                            <!-- Progress Bar -->
+                            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-4 overflow-hidden">
+                                <div class="h-full bg-brand-500 transition-all duration-300" style="width: ${(1 - (StudySession.queue.length / SmartEngine.getDueCards(StudySession.current.deckId).length || 1)) * 100}%"></div>
+                            </div>
+
+                            <!-- Card Area -->
+                            <div id="study-card-container" class="flex-1 mb-6 cursor-pointer" onclick="StudySession.flip()">
+                                <!-- Card injected via JS -->
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="h-24">
+                                <button id="btn-show" onclick="StudySession.flip()" class="w-full h-16 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold rounded-2xl shadow-xl text-lg tracking-wide hover:shadow-2xl transition active:scale-[0.98]">
+                                    JAVOBNI KO'RISH
+                                </button>
+                                
+                                <div id="grid-grading" class="hidden grid-cols-4 gap-2 h-16 animate-slide-in">
+                                    <button onclick="StudySession.grade(0)" class="flex flex-col items-center justify-center bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-xl active:scale-95 transition border border-rose-200 dark:border-rose-800">
+                                        <span class="font-bold text-sm">Qayta</span>
+                                        <span class="text-[9px] opacity-75">1m</span>
+                                    </button>
+                                    <button onclick="StudySession.grade(3)" class="flex flex-col items-center justify-center bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-xl active:scale-95 transition border border-orange-200 dark:border-orange-800">
+                                        <span class="font-bold text-sm">Qiyin</span>
+                                        <span class="text-[9px] opacity-75">10m</span>
+                                    </button>
+                                    <button onclick="StudySession.grade(4)" class="flex flex-col items-center justify-center bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl active:scale-95 transition border border-blue-200 dark:border-blue-800">
+                                        <span class="font-bold text-sm">Yaxshi</span>
+                                        <span class="text-[9px] opacity-75">1k</span>
+                                    </button>
+                                    <button onclick="StudySession.grade(5)" class="flex flex-col items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl active:scale-95 transition border border-emerald-200 dark:border-emerald-800">
+                                        <span class="font-bold text-sm">Oson</span>
+                                        <span class="text-[9px] opacity-75">4k</span>
+                                    </button>
                                 </div>
                             </div>
-                             <div class="bg-white dark:bg-dark-card p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-800">
-                                <span class="font-medium dark:text-gray-200 text-red-500">${I18n.t('settings.reset')}</span>
-                                <button onclick="localStorage.clear(); location.reload()" class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
+                        </div>
+                    `;
+                }
+
+                // --- PROFILE VIEW ---
+                else if (viewName === 'profile') {
+                    const u = DB.data.user;
+                    container.innerHTML = `
+                        <div class="animate-slide-in">
+                            <h2 class="text-2xl font-bold dark:text-white mb-6">Mening Statistika</h2>
+                            
+                            <div class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-6 text-white mb-6 shadow-xl shadow-indigo-500/30 relative overflow-hidden">
+                                <i class="fa-solid fa-crown absolute -bottom-6 -right-6 text-[10rem] opacity-10"></i>
+                                <div class="relative z-10">
+                                    <p class="text-indigo-200 font-bold text-xs uppercase mb-1">Jami Tajriba (XP)</p>
+                                    <h1 class="text-5xl font-black mb-4">${u.xp}</h1>
+                                    <div class="flex items-center gap-2 bg-white/20 p-2 rounded-lg w-fit backdrop-blur-sm">
+                                        <i class="fa-solid fa-medal text-yellow-300"></i>
+                                        <span class="font-bold text-sm">Daraja: ${Math.floor(Math.sqrt(u.xp/50)) + 1}</span>
+                                    </div>
+                                </div>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                    <i class="fa-solid fa-calendar-check text-green-500 text-2xl mb-2"></i>
+                                    <h3 class="text-xl font-bold dark:text-white">${u.streak} kun</h3>
+                                    <p class="text-xs text-gray-400">Streak</p>
+                                </div>
+                                <div class="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                    <i class="fa-solid fa-layer-group text-blue-500 text-2xl mb-2"></i>
+                                    <h3 class="text-xl font-bold dark:text-white">${DB.data.cards.length}</h3>
+                                    <p class="text-xs text-gray-400">Jami Kartalar</p>
+                                </div>
+                            </div>
+
+                             <button onclick="if(confirm('Barcha ma\'lumotlar o\'chiriladi! Rozimisiz?')) { localStorage.clear(); location.reload(); }" class="w-full py-4 text-red-500 bg-red-50 dark:bg-red-900/10 rounded-xl font-bold text-sm hover:bg-red-100 transition">
+                                <i class="fa-solid fa-trash mr-2"></i> Tizimni Tozalash
+                            </button>
                         </div>
                     `;
                 }
             }
         };
 
-        // Start Application
-        document.addEventListener('DOMContentLoaded', () => {
-            App.init();
+        // --- 6. UI HELPERS ---
+        const UI = {
+            toggleTheme() {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun text-yellow-400' : 'fa-solid fa-moon text-gray-500';
+                localStorage.theme = isDark ? 'dark' : 'light';
+            },
+
+            openCreateModal() {
+                // Populate Deck Select
+                const sel = document.getElementById('inp-deck-select');
+                sel.innerHTML = DB.data.decks.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                
+                document.getElementById('create-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('create-modal-content').classList.remove('translate-y-full'), 10);
+            },
+
+            closeCreateModal() {
+                document.getElementById('create-modal-content').classList.add('translate-y-full');
+                setTimeout(() => document.getElementById('create-modal').classList.add('hidden'), 300);
+            },
+
+            switchCreateTab(tab) {
+                if (tab === 'card') {
+                    document.getElementById('form-card').classList.remove('hidden');
+                    document.getElementById('form-deck').classList.add('hidden');
+                    document.getElementById('tab-card').classList.replace('text-gray-500', 'text-brand-600');
+                    document.getElementById('tab-card').classList.add('bg-white', 'shadow-sm');
+                    document.getElementById('tab-deck').classList.remove('bg-white', 'shadow-sm', 'text-brand-600');
+                } else {
+                    document.getElementById('form-card').classList.add('hidden');
+                    document.getElementById('form-deck').classList.remove('hidden');
+                    document.getElementById('tab-deck').classList.replace('text-gray-500', 'text-brand-600');
+                    document.getElementById('tab-deck').classList.add('bg-white', 'shadow-sm');
+                    document.getElementById('tab-card').classList.remove('bg-white', 'shadow-sm', 'text-brand-600');
+                }
+            },
+
+            updateHeader() {
+                document.getElementById('streak-display').innerText = DB.data.user.xp; // Using XP for streak visualization in header for now
+            }
+        };
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            DB.init();
+            
+            // Restore Theme
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun text-yellow-400';
+            }
+
+            UI.updateHeader();
+            Router.go('home');
         });
 
     </script>
 </body>
 </html>
+
 
